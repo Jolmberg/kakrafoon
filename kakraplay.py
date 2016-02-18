@@ -17,12 +17,21 @@ class FileNotFoundError(Exception):
 def load_backends(dir):
     modules=[]
     for file in os.listdir(dir):
-        if file.endswith('.py') and not file.startswith('.'):
-            try:
-                mod = importlib.import_module(file[:-3])
+        if file.startswith('.') or file == '__pycache__':
+            continue
+        if os.path.isfile(os.path.join(dir,file)):
+            if file.endswith('.py'):
+                file = file[:-3]
+            else:
+                continue
+        try:
+            mod = importlib.import_module(file)
+            if hasattr(mod, 'Player'):
                 modules.append(mod)
-            except:
-                print('Backend %s is broken.' % (file))
+            else:
+                print('Backend "%s" has no Player class and is worthless.' % (file))
+        except:
+            print('Backend %s is broken.' % (file))
     return modules
 
 def file_info(filename):
