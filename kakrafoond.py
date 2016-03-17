@@ -15,5 +15,9 @@ def queue():
     print(to_play)
     return 'apa'
 
+@app.route('/queue/<qid>', methods=['DELETE'])
+def queue_delete(qid):
+    print('Deleting item ' + qid + ' from queue.')
+
 if __name__ == '__main__':
     app.run()
