@@ -4,8 +4,9 @@ from flask import Flask, request
 app = Flask(__name__)
 
 @app.route('/queue', methods=['POST'])
-def queue():
+def queue_add():
     to_play = []
+    print(request.form['json'])
     for id in request.files:
         file = request.files[id]
         if id.startswith('f') and id[1:].isdigit():

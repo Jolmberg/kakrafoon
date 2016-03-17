@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import argparse
-import requests
+import getpass
+import kaklib
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line client for kakrafoond')
@@ -24,19 +26,28 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     url = args.server
-
-    print('Trying ' + url + ' ...')
+    username = args.user or getpass.getuser()
+    client = kaklib.Client(url, username)
 
     if args.filename:
-        files = []
-        i = 1
-        for x in args.filename:
-            print(x)
-            files.append(('f' + str(i).zfill(7), (x, open(x, 'rb'))))
+        songs = []
+        i = 0
+        for f in args.filename:
+            song = kaklib.Song(f)
+            try:
+                song.subtune = args.subtune[i]
+            except Exception:
+                pass
+            try:
+                song.loops = args.loops[i]
+            except Exception:
+                pass
+            songs.append(song)
             i += 1
-        print(files)
-        try:
-            r = requests.post(url + '/queue', files=files)
-            print(r)
-        except requests.exceptions.ConnectionError:
-            print("Connection failed")
+
+        if args.blob:
+            queueitems = [kaklib.QueueItem(songs)]
+        else:
+            queueitems = [kaklib.QueueItem([s]) for s in songs]
+
+        client.enqueue(queueitems)
