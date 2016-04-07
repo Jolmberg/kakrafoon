@@ -1,40 +1,8 @@
 #!/usr/bin/python3
 
-from marshmallow import Schema, fields
-import marshmallow
+import os
 import requests
-
-class Song(object):
-    def __init__(self, filename, subtune=-1, loops=0):
-        self.filename = filename
-        self.subtune = subtune
-        self.loops = loops
-
-        
-class QueueItem(object):
-    def __init__(self, songs):
-        self.songs = songs
-
-
-class EnqueueRequest(object):
-    def __init__(self, queueitems):
-        self.queueitems = queueitems
-        
-        
-class SongSchema(Schema):
-    filename = fields.Str()
-    subtune = fields.Int()
-    loops = fields.Int()
-    filenumber = fields.Int()
-
-    
-class QueueItemSchema(Schema):
-    songs = fields.Nested(SongSchema, many=True)
-
-    
-class EnqueueRequestSchema(Schema):
-    queueitems = fields.Nested(QueueItemSchema, many=True)
-    
+import kakmsg
 
 class Client(object):
     def __init__(self, url, username):
@@ -47,14 +15,17 @@ class Client(object):
         for item in items:
             for song in item.songs:
                 song.filenumber = i
-                files.append(('f' + str(i).zfill(7), (song.filename, open(song.filename, 'rb'))))
+                realname = song.filename
+                song.filename = os.path.basename(song.filename)
+                files.append(('f' + str(i).zfill(7), (song.filename, open(realname, 'rb'))))
                 i += 1
         
-        enqueuerequest = EnqueueRequest(items)
-        schema = EnqueueRequestSchema()
-        json = schema.dump(enqueuerequest)
+        enqueuerequest = kakmsg.EnqueueRequest(items)
+        schema = kakmsg.EnqueueRequestSchema()
+        json = schema.dumps(enqueuerequest)
         
         try:
+            print(files)
             r = requests.post(self.server_url + '/queue', data={'json':json}, files=files)
             print(r)
         except requests.exceptions.ConnectionError:

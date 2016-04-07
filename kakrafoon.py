@@ -3,6 +3,7 @@
 import argparse
 import getpass
 import kaklib
+import kakmsg
 
 
 if __name__ == '__main__':
@@ -33,7 +34,7 @@ if __name__ == '__main__':
         songs = []
         i = 0
         for f in args.filename:
-            song = kaklib.Song(f)
+            song = kakmsg.Song(f)
             try:
                 song.subtune = args.subtune[i]
             except Exception:
@@ -46,8 +47,8 @@ if __name__ == '__main__':
             i += 1
 
         if args.blob:
-            queueitems = [kaklib.QueueItem(songs)]
+            queueitems = [kakmsg.QueueItem(songs)]
         else:
-            queueitems = [kaklib.QueueItem([s]) for s in songs]
+            queueitems = [kakmsg.QueueItem([s]) for s in songs]
 
         client.enqueue(queueitems)
