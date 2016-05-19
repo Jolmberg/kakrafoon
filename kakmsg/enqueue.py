@@ -2,13 +2,14 @@ from marshmallow import Schema, fields
 import marshmallow
 
 class Song(object):
-    def __init__(self, filename=None, url=None, subtune=None, loops=None, **kwargs):
+    def __init__(self, filename=None, url=None, subtune=None, loops=None, fileid=None):
         if filename is not None and url is not None:
             raise Exception
         self.filename = filename
         self.url = url
         self.subtune = subtune
         self.loops = loops
+        self.fileid = fileid
 
 
 class QueueItem(object):
@@ -17,7 +18,8 @@ class QueueItem(object):
 
 
 class EnqueueRequest(object):
-    def __init__(self, queueitems=[]):
+    def __init__(self, username, queueitems=[]):
+        self.username = username
         self.queueitems = queueitems
         
         
@@ -26,7 +28,7 @@ class SongSchema(Schema):
     url = fields.Str(missing=None, allow_none=True)
     subtune = fields.Int(missing=None)
     loops = fields.Int(missing=None)
-    filenumber = fields.Int(missing=None, required=False)
+    fileid = fields.Str(missing=None, required=False)
 
     @marshmallow.post_load
     def make_song(self, data):
@@ -42,6 +44,7 @@ class QueueItemSchema(Schema):
 
     
 class EnqueueRequestSchema(Schema):
+    username = fields.Str(missing=None)
     queueitems = fields.Nested(QueueItemSchema, many=True)
 
     @marshmallow.post_load

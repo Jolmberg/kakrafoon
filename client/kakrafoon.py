@@ -2,8 +2,10 @@
 
 import argparse
 import getpass
+import urllib.parse
+
 import kaklib
-import kakmsg
+import kakmsg.enqueue
 
 
 if __name__ == '__main__':
@@ -30,25 +32,36 @@ if __name__ == '__main__':
     username = args.user or getpass.getuser()
     client = kaklib.Client(url, username)
 
-    if args.filename:
+    if args.queue:
+        queue = client.get_queue()
+        
+    
+    elif args.filename:
         songs = []
         i = 0
         for f in args.filename:
-            song = kakmsg.Song(f)
+            scheme = urllib.parse.urlparse(f).scheme
+            if scheme=='':
+                song = kakmsg.enqueue.Song(filename=f)
+            else:
+                song = kakmsg.enqueue.Song(url=f)
+
             try:
                 song.subtune = args.subtune[i]
             except Exception:
                 pass
+
             try:
                 song.loops = args.loops[i]
             except Exception:
                 pass
+
             songs.append(song)
             i += 1
 
         if args.blob:
-            queueitems = [kakmsg.QueueItem(songs)]
+            queueitems = [kakmsg.enqueue.QueueItem(songs)]
         else:
-            queueitems = [kakmsg.QueueItem([s]) for s in songs]
+            queueitems = [kakmsg.enqueue.QueueItem([s]) for s in songs]
 
         client.enqueue(queueitems)

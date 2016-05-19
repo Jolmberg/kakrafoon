@@ -11,7 +11,7 @@ import unittest
 # on the number of songs in each item. The length parameter is not used.
 
 class _QueueItem(object):
-    def __init__(self, obj, user, songs, length):
+    def __init__(self, obj, user, songs, length=None):
         self.obj = obj
         self.user = user
         self.songs = songs
@@ -23,7 +23,7 @@ class Queue(object):
         self.user_queue = {}
         self.user_skip = {}
 
-    def add(self, obj, user, songs, length):
+    def add(self, obj, user, songs, length=None):
         """Add an item to the queue"""
         item = _QueueItem(obj, user, songs, length)
         if not user in self.user_order:
