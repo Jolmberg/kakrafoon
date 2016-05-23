@@ -7,6 +7,13 @@ import urllib.parse
 import kaklib
 import kakmsg.enqueue
 
+def print_queue(queue):
+    if not queue.items:
+        print("Oh noes, the queue is empty.")
+    for i in queue.items:
+        for s in i.songs:
+            print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line client for kakrafoond')
@@ -34,7 +41,7 @@ if __name__ == '__main__':
 
     if args.queue:
         queue = client.get_queue()
-        
+        print_queue(queue)
     
     elif args.filename:
         songs = []

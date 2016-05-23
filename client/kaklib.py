@@ -3,12 +3,13 @@
 import os
 import requests
 import kakmsg.enqueue
+import kakmsg.queue
 
 class Client(object):
     def __init__(self, url, username):
         self.server_url = url
         self.username = username
-    
+
     def enqueue(self, items):
         files = []
         i = 0
@@ -19,22 +20,26 @@ class Client(object):
                 song.filename = os.path.basename(song.filename)
                 files.append((song.fileid, (song.filename, open(realname, 'rb'))))
                 i += 1
-        
+
         enqueuerequest = kakmsg.enqueue.EnqueueRequest(self.username, items)
         schema = kakmsg.enqueue.EnqueueRequestSchema()
         json = schema.dumps(enqueuerequest)
-        
+
         try:
-            print(files)
             r = requests.post(self.server_url + '/queue', data={'enqueue_request':json}, files=files)
-            print(r)
+            if r.status_code == 200:
+                return
+            else:
+                print("Server complained with message: %s" % (r.text,))
         except requests.exceptions.ConnectionError:
             print("Connection failed")
 
     def get_queue(self):
-        """Write something reasonable here, and reasonable code below"""
+        """Retrieve the current queue"""
         try:
             r = requests.get(self.server_url+ '/queue')
-            return r
+            schema = kakmsg.queue.QueueSchema()
+            q = schema.loads(r.text).data
+            return q
         except requests.exceptions.ConnectionError:
             print("Connection failed")

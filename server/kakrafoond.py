@@ -52,7 +52,6 @@ def queue_add():
     enqueue_request = None
     if 'enqueue_request' in request.form:
         schema = kakmsg.enqueue.EnqueueRequestSchema()
-        #print(request.form['enqueuerequest'])
         enqueue_request = schema.loads(request.form['enqueue_request']).data
         print(enqueue_request)
 
@@ -75,14 +74,15 @@ def queue_add():
                 fobj = request.files[fileid]
                 filename = os.path.split(fobj.filename)[1]
                 song_counter += 1
-                song = make_song(song_counter, enqueue_song)
+                song = make_song(song_counter, enqueue_song=enqueue_song)
                 save_file(item_counter, song_counter, fobj)
                 item.songs.append(song)
 
             if song_counter>0:
                 items[item_counter] = item
                 new_items.append(item_counter)
-                
+
+    # Handle files that were not mentioned in the json payload
     if len(request.files) > len(claimed_files):
         for id, fobj in request.files:
             if id not in claimed_files:
@@ -102,23 +102,24 @@ def queue_add():
         queue.add(item_id, item.user, len(item.songs))
                 
     print(items)
-
     print(enqueue_request)
-    #print(files)
-    return 'apa'
+    print('%d new item(s) added' % len(new_items))
+    return ''
 
 
 @app.route('/queue', methods=['GET'])
 def queue_show():
-    print(queue.get_all())
-    return 'apa'
+    """Return the current queue as a queue.Queue object"""
+    q = kakmsg.queue.Queue([items[x] for x in queue.get_all()])
+    schema = kakmsg.queue.QueueSchema()
+    json = schema.dumps(q)
+    return json.data
+
 
 @app.route('/queue/<qid>', methods=['DELETE'])
 def queue_delete(qid):
     print('Deleting item ' + qid + ' from queue.')
 
 if __name__ == '__main__':
-    #global queue
-    #queue = 
     app.debug=True
     app.run()
