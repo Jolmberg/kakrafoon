@@ -7,12 +7,25 @@ import sys
 import os
 import re
 
+# backend_order is the order in which backends are tried
+# TODO: This should be configurable (and probably needs to express more
+#       complicated things than a simple order)
+backend_order = ['ogg123', 'dummy']
+
 class NoBackendError(Exception):
     def __init__(self, file_output):
         self.file_output = file_output
         
 class FileNotFoundError(Exception):
     pass
+
+def sort_modules(modules):
+    for name in reversed(backend_order):
+        mods = [m for m in modules if m.__name__ == name]
+        for m in mods:
+            print("klafs")
+            modules.remove(m)
+            modules.insert(0, m)
 
 def load_backends(dir):
     modules=[]
@@ -32,6 +45,7 @@ def load_backends(dir):
                 print('Backend "%s" has no Player class and is worthless.' % (file))
         except:
             print('Backend %s is broken.' % (file))
+    sort_modules(modules)
     return modules
 
 def file_info(filename):
@@ -49,10 +63,13 @@ def get_player(filename, subtune=None, loops=0, stop_callback=None):
             for r in m.regexps:
                 if re.match(r, text):
                     module = m
-    if not module:
+                    break
+            if module is not None:
+                break
+    else:
         raise NoBackendError(text)
     
-    return m.Player(filename, subtune, loops, stop_callback)
+    return module.Player(filename, subtune, loops, stop_callback)
 
 # TODO: Make path configurable (and also not relative to .)
 sys.path.append('./backends')
@@ -72,7 +89,6 @@ if __name__ == '__main__':
         p = get_player(args.filename, args.subtune, args.loops)
         p.play()
         # TODO: Handle user input istead of just waiting here...
-        p.proc.wait()
     except NoBackendError as e:
         print("No suitable backend found. Output from 'file' was:\n" + e.file_output)
     except FileNotFoundError:
