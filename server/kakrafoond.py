@@ -4,11 +4,11 @@ import uuid
 import os
 import kakmsg.enqueue
 import kakmsg.queue
-import queue
+import kakqueue
 from flask import Flask, request
 app = Flask(__name__)
 
-queue = queue.Queue()
+kqueue = kakqueue.Queue()
 items = {}
 songs = {}
 item_counter = 0
@@ -16,7 +16,7 @@ item_counter = 0
 os.makedirs("/tmp/kakrafoon", exist_ok=True)
 
 def make_song(key, filename=None, url=None, enqueue_song=None):
-    """Create a queue.Song object from whatever info is available"""
+    """Create a kakmsg.queue.Song object from whatever info is available"""
     song = kakmsg.queue.Song(key=key)
     if enqueue_song:
         song.filename = enqueue_song.filename
@@ -99,7 +99,7 @@ def queue_add():
 
     for item_id in new_items:
         item = items[item_id]
-        queue.add(item_id, item.user, len(item.songs))
+        kqueue.enqueue(item_id, item.user, len(item.songs))
                 
     print(items)
     print(enqueue_request)
@@ -110,7 +110,7 @@ def queue_add():
 @app.route('/queue', methods=['GET'])
 def queue_show():
     """Return the current queue as a queue.Queue object"""
-    q = kakmsg.queue.Queue([items[x] for x in queue.get_all()])
+    q = kakmsg.queue.Queue([items[x] for x in kqueue.get_all()])
     schema = kakmsg.queue.QueueSchema()
     json = schema.dumps(q)
     return json.data
