@@ -16,7 +16,7 @@ class Song(object):
 
 
 class QueueItem(object):
-    def __init__(self, key, user, songs=None):
+    def __init__(self, user, key=None, songs=None):
         self.key = key
         self.user = user
         if songs is None:

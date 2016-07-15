@@ -5,13 +5,17 @@ import os
 import kakmsg.enqueue
 import kakmsg.queue
 import kakqueue
+import songpool
+import control
 from flask import Flask, request
 app = Flask(__name__)
 
 kqueue = kakqueue.Queue()
-items = {}
-songs = {}
-item_counter = 0
+kpool = songpool.SongPool()
+control = control.Control(kpool, kqueue)
+
+control.start()
+
 
 os.makedirs("/tmp/kakrafoon", exist_ok=True)
 
@@ -32,11 +36,6 @@ def make_song(key, filename=None, url=None, enqueue_song=None):
     return song
 
 
-def save_file(item_id, file_id, fileobj):
-    path = os.path.join('/tmp/kakrafoon', str(item_id))
-    os.makedirs(path, exist_ok=True)
-    filepath = os.path.join(path, str(file_id))
-    fileobj.save(filepath)
 
 
 @app.route('/queue', methods=['POST'])
@@ -46,7 +45,6 @@ def queue_add():
     Request can optionally contain an enqueue_request parameter.
     Otherwise, each file posted is queued as a separate item.
     """
-    global item_counter
     request_id = str(uuid.uuid4())
     to_play = []
     enqueue_request = None
@@ -59,50 +57,46 @@ def queue_add():
     claimed_files = set()
     if enqueue_request:
         for enqueue_item in enqueue_request.queueitems:
-            item_counter += 1
-            print("Item " + str(item_counter))
-            item = kakmsg.queue.QueueItem(item_counter,
-                                          enqueue_request.username)
+            # Make sure this item has at least one song
+            for enqueue_song in enqueue_item.songs:
+                if enqueue_song.fileid in request.files:
+                    break
+            else:
+                continue
+
+            item = kakmsg.queue.QueueItem(enqueue_request.username)
             item.song_counter = 0
             for enqueue_song in enqueue_item.songs:
-                print("Song " + str(item.song_counter))
                 fileid = enqueue_song.fileid
                 if fileid not in request.files:
-                    print("bapp")
                     continue
                 claimed_files.add(fileid)
                 fobj = request.files[fileid]
                 filename = os.path.split(fobj.filename)[1]
                 item.song_counter += 1
                 song = make_song(item.song_counter, enqueue_song=enqueue_song)
-                save_file(item_counter, item.song_counter, fobj)
+                song.file_object = fobj
                 item.songs.append(song)
 
-            if item.song_counter>0:
-                items[item_counter] = item
-                new_items.append(item_counter)
+            item_id = kpool.add_item(item)
+            new_items.append(item_id)
 
     # Handle files that were not mentioned in the json payload
     if len(request.files) > len(claimed_files):
         for id, fobj in request.files:
             if id not in claimed_files:
-                item_counter += 1
-                print("Item " + str(item_counter))
-                item = kakmsg.queue.QueueItem(item_counter,
-                                              enqueue_request.username)
+                item = kakmsg.queue.QueueItem(enqueue_request.username)
                 filename = os.path.split(fobj.filename)[1]
-                save_file(item_counter, 0, fobj)
                 song = make_song(0, filename=filename)
                 item.songs.append(song)
-                new_items.append(item_counter)
-                items[item_counter] = item
+                item_id = kpool.add_item(item)
+                new_items.append(item_id)
 
     for item_id in new_items:
-        item = items[item_id]
+        item = kpool.get_item(item_id)
         kqueue.enqueue(item_id, item.user, len(item.songs))
                 
-    print(items)
-    print(enqueue_request)
+    print("Pool: " + str(kpool.items))
     print('%d new item(s) added' % len(new_items))
     return ''
 
@@ -110,7 +104,7 @@ def queue_add():
 @app.route('/queue', methods=['GET'])
 def queue_show():
     """Return the current queue as a queue.Queue object"""
-    q = kakmsg.queue.Queue([items[x] for x in kqueue.get_all()])
+    q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()])
     schema = kakmsg.queue.QueueSchema()
     json = schema.dumps(q)
     return json.data
