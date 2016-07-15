@@ -13,8 +13,10 @@ class Player(object):
         
     def play(self):
         self.proc = subprocess.Popen(["/usr/bin/ogg123", self.filename])
-        self.thread = threading.Thread(target=self._wait)
-        self.thread.run()
+        self.proc.wait()
+        self.stopped = True
+        #self.thread = threading.Thread(target=self._wait)
+        #self.thread.run()
 
     # These methods should be supported by a good backend.
     # def pause():
