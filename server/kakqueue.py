@@ -11,7 +11,17 @@ import unittest
 # This queue implementation schedules items as fairly as possible, based only
 # on the number of songs in each item. The length parameter is not used.
 
-# TODO: This isn't thread safe. Does it need to be?
+def synchronised(f):
+    """Synchronisation decorator"""
+
+    def real_function(*args, **kw):
+        args[0].lock.acquire()
+        try:
+            return f(*args, **kw)
+        finally:
+            args[0].lock.release()
+    return real_function
+
 
 class _QueueItem(object):
     def __init__(self, obj, user, songs, length=None):
@@ -26,6 +36,7 @@ class Queue(object):
         self.user_queue = {}
         self.user_skip = {}
         self.nonempty = threading.Event()
+        self.lock = threading.Lock()
 
     def _purge_user(self, user):
         """Remove all traces of a user from the queue"""
@@ -33,8 +44,10 @@ class Queue(object):
         del self.user_queue[user]
         del self.user_skip[user]
 
+    @synchronised
     def enqueue(self, obj, user, songs, length=None):
         """Add an item to the queue"""
+
         item = _QueueItem(obj, user, songs, length)
         if not user in self.user_order:
             self.user_order.append(user)
@@ -43,6 +56,7 @@ class Queue(object):
         self.user_queue[user].append(item)
         self.nonempty.set()
 
+    @synchronised
     def get_first(self):
         """Return the first item in the queue, or None if the queue is empty"""
         for u in self.user_order:
@@ -50,6 +64,7 @@ class Queue(object):
                 return self.user_queue[u][0].obj
         return None
 
+    @synchronised
     def get_all(self):
         """Get all queue items, in the correct order"""
         order = self.user_order[:]
@@ -75,6 +90,7 @@ class Queue(object):
                 remove = None
         return queue
 
+    @synchronised
     def dequeue(self, user, obj):
         """Remove an item from the queue
 
@@ -100,6 +116,7 @@ class Queue(object):
         if not self.user_order:
             self.nonempty.clear()
 
+    @synchronised
     def pop(self):
         """Pop the first item from the queue
 
