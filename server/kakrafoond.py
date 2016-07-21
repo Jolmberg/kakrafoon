@@ -63,9 +63,9 @@ def queue_add():
             print("Item " + str(item_counter))
             item = kakmsg.queue.QueueItem(item_counter,
                                           enqueue_request.username)
-            song_counter = 0
+            item.song_counter = 0
             for enqueue_song in enqueue_item.songs:
-                print("Song " + str(song_counter))
+                print("Song " + str(item.song_counter))
                 fileid = enqueue_song.fileid
                 if fileid not in request.files:
                     print("bapp")
@@ -73,12 +73,12 @@ def queue_add():
                 claimed_files.add(fileid)
                 fobj = request.files[fileid]
                 filename = os.path.split(fobj.filename)[1]
-                song_counter += 1
-                song = make_song(song_counter, enqueue_song=enqueue_song)
-                save_file(item_counter, song_counter, fobj)
+                item.song_counter += 1
+                song = make_song(item.song_counter, enqueue_song=enqueue_song)
+                save_file(item_counter, item.song_counter, fobj)
                 item.songs.append(song)
 
-            if song_counter>0:
+            if item.song_counter>0:
                 items[item_counter] = item
                 new_items.append(item_counter)
 
