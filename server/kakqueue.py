@@ -121,7 +121,7 @@ class Queue(object):
         """Pop the first item from the queue
 
         Note that this is different from dequeue() as pop() will retain the global
-        order of items. Use pop() when retrieving the next item to play.
+        order of items. Use pop() when removing the item that was just played.
         """
         for x in self.user_order:
             if self.user_skip[x] > 0:
