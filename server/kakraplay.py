@@ -53,10 +53,10 @@ def file_info(filename):
 
 # This is the function kakrafoond should call
 def get_player(filename, subtune=None, loops=0, stop_callback=None):
-    if not os.path.isfile(args.filename):
+    if not os.path.isfile(filename):
         raise FileNotFoundError
     
-    text = file_info(args.filename)
+    text = file_info(filename)
     module = None
     for m in modules:
         if hasattr(m, 'regexps'):
