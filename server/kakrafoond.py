@@ -114,6 +114,21 @@ def queue_show():
 def queue_delete(qid):
     print('Deleting item ' + qid + ' from queue.')
 
+@app.route('/pause', methods=['POST'])
+def pause():
+    control.pause()
+    return ''
+
+@app.route('/resume', methods=['POST'])
+def resume():
+    control.resume()
+    return ''
+
+@app.route('/skip', methods=['POST'])
+def skip():
+    control.skip()
+    return ''
+
 if __name__ == '__main__':
     app.debug=True
     app.run()

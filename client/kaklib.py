@@ -43,3 +43,24 @@ class Client(object):
             return q
         except requests.exceptions.ConnectionError:
             print("Connection failed")
+
+    def pause(self):
+        """Pause playback"""
+        try:
+            r = requests.post(self.server_url + '/pause')
+        except requests.exceptions.ConnectionError:
+            print("Connection failed")
+
+    def resume(self):
+        """Resume playback"""
+        try:
+            r = requests.post(self.server_url + '/resume')
+        except requests.exceptions.ConnectionError:
+            print("Connection failed")
+
+    def skip(self):
+        """Skip current song"""
+        try:
+            r = requests.post(self.server_url + '/skip')
+        except requests.exceptions.ConnectionError:
+            print("Connection failed")
