@@ -33,6 +33,7 @@ class Player(object):
 
     def abort(self):
         if self.proc:
+            self.proc.send_signal(signal.SIGCONT)
             self.proc.send_signal(signal.SIGTERM)
 
     def _wait(self):
