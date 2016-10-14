@@ -49,7 +49,8 @@ if __name__ == '__main__':
 
     if args.queue:
         queue = client.get_queue()
-        print_queue(queue)
+        if queue:
+            print_queue(queue)
     elif args.pause:
         client.pause()
     elif args.resume:
