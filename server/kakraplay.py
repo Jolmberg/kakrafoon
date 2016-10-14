@@ -23,7 +23,6 @@ def sort_modules(modules):
     for name in reversed(backend_order):
         mods = [m for m in modules if m.__name__ == name]
         for m in mods:
-            print("klafs")
             modules.remove(m)
             modules.insert(0, m)
 
