@@ -19,12 +19,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line client for kakrafoond')
     parser.add_argument('-b', '--blob', action='store_true',
                         help='queue all files as a single queue entry')
+
+    group1 = parser.add_mutually_exclusive_group()
+    group1.add_argument('-e', '--resume', action='store_true',
+                        help='resume playback')
+    group1.add_argument('-k', '--skip', action='store_true',
+                        help='skip current song')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
-    parser.add_argument('-q', '--queue', action='store_true',
+    group1.add_argument('-p', '--pause', action='store_true',
+                       help='pause playback')
+    group1.add_argument('-q', '--queue', action='store_true',
                         help='show the current queue')
-    parser.add_argument('-r', '--remove', metavar='ID',
-                        help='remove entry ID from the queue')
+    group1.add_argument('-r', '--remove', metavar='ID',
+                       help='remove entry ID from the queue')
     parser.add_argument('-s', '--server', type=str, metavar='URL', required=True,
                         help='url of kakrafoond server')
     parser.add_argument('-t', '--subtune', type=int, nargs='*', metavar='N',
@@ -42,7 +50,12 @@ if __name__ == '__main__':
     if args.queue:
         queue = client.get_queue()
         print_queue(queue)
-    
+    elif args.pause:
+        client.pause()
+    elif args.resume:
+        client.resume()
+    elif args.skip:
+        client.skip()
     elif args.filename:
         songs = []
         i = 0
