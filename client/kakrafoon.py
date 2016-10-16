@@ -3,6 +3,7 @@
 import argparse
 import getpass
 import urllib.parse
+import random
 
 import kaklib
 import kakmsg.enqueue
@@ -23,6 +24,8 @@ if __name__ == '__main__':
     group1 = parser.add_mutually_exclusive_group()
     group1.add_argument('-e', '--resume', action='store_true',
                         help='resume playback')
+    group1.add_argument('-f', '--shuffle', action='store_true',
+                        help='shuffle songs')
     group1.add_argument('-k', '--skip', action='store_true',
                         help='skip current song')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
@@ -60,7 +63,10 @@ if __name__ == '__main__':
     elif args.filename:
         songs = []
         i = 0
-        for f in args.filename:
+        filenames = args.filename[:]
+        if args.shuffle:
+            random.shuffle(filenames)
+        for f in filenames:
             scheme = urllib.parse.urlparse(f).scheme
             if scheme=='':
                 song = kakmsg.enqueue.Song(filename=f)
