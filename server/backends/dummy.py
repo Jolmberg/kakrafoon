@@ -5,7 +5,7 @@ import time
 regexps = [".*"]
 
 class Player(object):
-    def __init__(self, filename, subtune, loops, stop_callback = None):
+    def __init__(self, regexp, filename, subtune, loops, stop_callback = None):
         self.filename = filename
         self.stopped = False
         self.stop_callback = stop_callback
@@ -53,3 +53,6 @@ class Player(object):
         self.stopped = True
         if self.stop_callback:
             self.stop_callback()
+
+def get_player(regexp, filename, subtune, loops, stop_callback=None):
+    return Player(regexp, filename, subtune, loops, stop_callback)

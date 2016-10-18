@@ -28,7 +28,9 @@ class Control(threading.Thread):
             for song in self.item.songs:
                 realfilename = os.path.join('/tmp/kakrafoon',str(self.item.key), str(song.key))
                 print(realfilename)
-                self.player = kakraplay.get_player(realfilename)
+                self.player = kakraplay.get_player(realfilename,
+                                                   subtune=song.subtune,
+                                                   loops=song.loops)
                 self.player.play(block=True)
             self.queue.pop()
 

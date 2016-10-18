@@ -10,7 +10,7 @@ import re
 # backend_order is the order in which backends are tried
 # TODO: This should be configurable (and probably needs to express more
 #       complicated things than a simple order)
-backend_order = ['ogg123', 'dummy']
+backend_order = ['generic', 'dummy']
 
 class NoBackendError(Exception):
     def __init__(self, file_output):
@@ -38,10 +38,10 @@ def load_backends(dir):
                 continue
         try:
             mod = importlib.import_module(file)
-            if hasattr(mod, 'Player'):
+            if hasattr(mod, 'get_player'):
                 modules.append(mod)
             else:
-                print('Backend "%s" has no Player class and is worthless.' % (file))
+                print('Backend "%s" has no get_player function and is worthless.' % (file))
         except:
             print('Backend %s is broken.' % (file))
     sort_modules(modules)
@@ -57,18 +57,20 @@ def get_player(filename, subtune=None, loops=0, stop_callback=None):
     
     text = file_info(filename)
     module = None
+    regexp = None
     for m in modules:
         if hasattr(m, 'regexps'):
             for r in m.regexps:
                 if re.match(r, text):
                     module = m
+                    regexp = r
                     break
             if module is not None:
                 break
     else:
         raise NoBackendError(text)
     
-    return module.Player(filename, subtune, loops, stop_callback)
+    return module.get_player(regexp, filename, subtune, loops, stop_callback)
 
 # TODO: Make path configurable (and also not relative to .)
 sys.path.append('./backends')
