@@ -11,20 +11,24 @@ class Player(object):
         self.stop_callback = stop_callback
         self.cmds = []
 
-    def play(self):
+    def play(self, block=False):
         print("Playing")
         self.thread = threading.Thread(target=self._work)
         self.thread.start()
+        if block:
+            self.thread.join()
+            self.proc = None
+            self.stopped = True
 
     def pause(self):
         print("Pause")
         self.cmds.append('pause')
 
-    def unpause(self):
+    def resume(self):
         print("Unpause")
         self.cmds.append('unpause')
 
-    def stop(self):
+    def abort(self):
         print("Stop")
         self.cmds.append('stop')
 
