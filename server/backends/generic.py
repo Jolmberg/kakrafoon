@@ -6,7 +6,9 @@ import signal
 regexps = {
     '.*Vorbis audio.*' : ('ogg123', ['/usr/bin/ogg123'], None, None),
     '.*PlaySID.*' : ('sidplay2', ['/usr/bin/aoss', '/usr/bin/padsp', '/usr/bin/sidplay2', '-os'],
-                     '-o$s', None)
+                     '-o$s', None),
+    '.*NES Sound File.*' : ('nosefart', ['/usr/bin/nosefart', '-l 1200]'], '-t $s', '-a $l'),
+    '.*MPEG.*' : ('mplayer', ['/usr/bin/mplayer'], None, None)
 }
 
 class Player(object):
