@@ -32,6 +32,7 @@ class Control(threading.Thread):
                                                    subtune=song.subtune,
                                                    loops=song.loops)
                 self.player.play(block=True)
+            self.pool.remove_item(item_id)
             self.queue.pop()
 
     def pause(self):
