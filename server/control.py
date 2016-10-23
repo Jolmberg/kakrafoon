@@ -43,7 +43,7 @@ class Control(threading.Thread):
                                                    subtune=song.subtune,
                                                    loops=song.loops)
                 # What if pause has been called by now!? Make this stuff thread safe!
-                self.player.play(block=True)
+                self.player.play()
             self.pool.remove_item(item_id)
             self.queue.pop()
 

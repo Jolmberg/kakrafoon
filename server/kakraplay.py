@@ -51,7 +51,7 @@ def file_info(filename):
     return subprocess.check_output(['/usr/bin/file', '-b', filename]).decode()
 
 # This is the function kakrafoond should call
-def get_player(filename, subtune=None, loops=0, stop_callback=None):
+def get_player(filename, subtune=None, loops=0):
     if not os.path.isfile(filename):
         raise FileNotFoundError
     
@@ -70,7 +70,7 @@ def get_player(filename, subtune=None, loops=0, stop_callback=None):
     else:
         raise NoBackendError(text)
     
-    return module.get_player(regexp, filename, subtune, loops, stop_callback)
+    return module.get_player(regexp, filename, subtune, loops)
 
 # TODO: Make path configurable (and also not relative to .)
 sys.path.append('./backends')

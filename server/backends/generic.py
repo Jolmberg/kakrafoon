@@ -12,13 +12,12 @@ regexps = {
 }
 
 class Player(object):
-    def __init__(self, regexp, filename, subtune, loops, stop_callback = None):
+    def __init__(self, regexp, filename, subtune, loops):
         self.subtune = subtune
         self.loops = loops
         self.filename = filename
         self.proc = None
         self.stopped = False
-        self.stop_callback = stop_callback
 
         n, c, s, l = regexps[regexp]
         self.name = n
@@ -31,38 +30,36 @@ class Player(object):
         print(self.cmd)
         self.cmd.append(self.filename)
         
-    def play(self, block=False):
+    def play(self):
         print(self.cmd)
         self.proc = subprocess.Popen(self.cmd)
-        if block:
-            self.proc.wait()
-            self.proc = None
-            self.stopped = True
-        else:
-            self.thread = threading.Thread(target=self._wait)
-            self.thread.run()
-
-    # These methods should be supported by a good backend.
-    def pause(self):
-        if self.proc:
-            self.proc.send_signal(signal.SIGSTOP)
-
-    def resume(self):
-        if self.proc:
-            self.proc.send_signal(signal.SIGCONT)
-
-    def abort(self):
-        if self.proc:
-            self.proc.send_signal(signal.SIGCONT)
-            self.proc.send_signal(signal.SIGTERM)
-
-    def _wait(self):
         self.proc.wait()
         self.proc = None
         self.stopped = True
-        if self.stop_callback:
-            self.stop_callback()
+
+    # These methods should be supported by a good backend.
+    def pause(self):
+        try:
+            self.proc.send_signal(signal.SIGSTOP)
+            return True
+        except:
+            return False
+
+    def resume(self):
+        try:
+            self.proc.send_signal(signal.SIGCONT)
+            return True
+        except:
+            return False
+
+    def abort(self):
+        try:
+            self.proc.send_signal(signal.SIGCONT)
+            self.proc.send_signal(signal.SIGTERM)
+            return True
+        except:
+            return False
 
 
-def get_player(regexp, filename, subtune, loops, stop_callback = None):
-    return Player(regexp, filename, subtune, loops, stop_callback)
+def get_player(regexp, filename, subtune, loops):
+    return Player(regexp, filename, subtune, loops)
