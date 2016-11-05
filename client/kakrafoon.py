@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 import argparse
+import configparser
 import getpass
 import urllib.parse
 import random
+import os
 
 import kaklib
 import kakmsg.enqueue
@@ -17,7 +19,25 @@ def print_queue(queue):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Command line client for kakrafoond')
+    parser1 = argparse.ArgumentParser(add_help=False)
+    parser1.add_argument('-c', '--config', metavar='FILE',
+                         help='specify config file')
+    args, remaining_argv = parser1.parse_known_args()
+
+    homedir = os.path.expanduser('~')
+    config = configparser.ConfigParser()
+    configfiles = [os.path.join(homedir, '.config', 'kakrafoon'),
+                   os.path.join(homedir, '.kakrafoon')]
+    if args.config:
+        configfiles.insert(0, args.config)
+    config.read(configfiles)
+    if config.has_section('kakrafoon'):
+        defaults = dict(config.items('kakrafoon'))
+    else:
+        defaults = {}
+
+    parser = argparse.ArgumentParser(parents=[parser1], description='Command line client for kakrafoond')
+    parser.set_defaults(**defaults)
     parser.add_argument('-b', '--blob', action='store_true',
                         help='queue all files as a single queue entry')
 
@@ -36,7 +56,8 @@ if __name__ == '__main__':
                         help='show the current queue')
     group1.add_argument('-r', '--remove', metavar='ID',
                        help='remove entry ID from the queue')
-    parser.add_argument('-s', '--server', type=str, metavar='URL', required=True,
+    parser.add_argument('-s', '--server', type=str, metavar='URL',
+                        required = "server" not in defaults,
                         help='url of kakrafoond server')
     parser.add_argument('-t', '--subtune', type=int, nargs='*', metavar='N',
                         help='subtune to play')
@@ -44,7 +65,7 @@ if __name__ == '__main__':
                         help='username to present to the server')
     parser.add_argument('filename', nargs='*', metavar='FILENAME',
                         help='path and/or filename to queue')
-    args = parser.parse_args()
+    args = parser.parse_args(remaining_argv)
 
     url = args.server
     username = args.user or getpass.getuser()
@@ -92,3 +113,5 @@ if __name__ == '__main__':
             queueitems = [kakmsg.enqueue.QueueItem([s]) for s in songs]
 
         client.enqueue(queueitems)
+    else:
+        parser.print_help()
