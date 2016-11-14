@@ -10,14 +10,13 @@ class Player(object):
         self.stopped = False
         self.cmds = []
 
-    def play(self, block=False):
+    def play(self):
         print("Playing")
         self.thread = threading.Thread(target=self._work)
         self.thread.start()
-        if block:
-            self.thread.join()
-            self.proc = None
-            self.stopped = True
+        self.thread.join()
+        self.proc = None
+        self.stopped = True
 
     def pause(self):
         print("Pause")
@@ -44,6 +43,7 @@ class Player(object):
                     if state == 'paused':
                         state = 'playing'
                 elif cmd == 'stop':
+                    state = 'stopped'
                     break
 
             if state == 'playing':
@@ -51,6 +51,8 @@ class Player(object):
                 print("Playing, %d seconds left" % (left,))
                 if left <= 0:
                     break
+            elif state == 'stopped':
+                break
             time.sleep(1)
 
         self.stopped = True
