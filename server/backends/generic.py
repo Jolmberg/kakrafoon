@@ -22,9 +22,9 @@ class Player(object):
         self.name = n
         self.cmd = c[:]
         print(self.cmd)
-        if subtune:
+        if subtune and s:
             self.cmd.append(s.replace('$s', str(subtune)))
-        if loops:
+        if loops and l:
             self.cmd.append(l.replace('$l', str(loops)))
         print(self.cmd)
         self.cmd.append(self.filename)
