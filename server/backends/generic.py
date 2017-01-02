@@ -5,8 +5,7 @@ import signal
 # File types that can be handled by this backend (python regexp format)
 regexps = {
     '.*Vorbis audio.*' : ('ogg123', ['/usr/bin/ogg123'], None, None),
-    '.*PlaySID.*' : ('sidplay2', ['/usr/bin/aoss', '/usr/bin/padsp', '/usr/bin/sidplay2', '-os'],
-                     '-o$s', None),
+    '.*PlaySID.*' : ('sidplay2', ['/usr/bin/sidplay2', '-os'], '-o$s', None),
     '.*NES Sound File.*' : ('nosefart', ['/usr/bin/nosefart', '-l 1200', '-a 2'], '-t $s', '-a $l'),
     '.*MPEG.*' : ('mplayer', ['/usr/bin/mplayer'], None, None)
 }
