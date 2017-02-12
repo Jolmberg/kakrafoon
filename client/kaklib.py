@@ -4,6 +4,7 @@ import os
 import requests
 import kakmsg.enqueue
 import kakmsg.queue
+import werkzeug
 
 class Client(object):
     def __init__(self, url, username):
@@ -21,7 +22,8 @@ class Client(object):
                 song.fileid = 'f' + str(i).zfill(7)
                 realname = song.filename
                 song.filename = os.path.basename(song.filename)
-                files.append((song.fileid, (song.filename, open(realname, 'rb'))))
+                secure_filename = werkzeug.secure_filename(song.filename)
+                files.append((song.fileid, (secure_filename, open(realname, 'rb'))))
                 i += 1
 
         enqueuerequest = kakmsg.enqueue.EnqueueRequest(self.username, items)
