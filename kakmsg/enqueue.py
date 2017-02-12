@@ -11,18 +11,26 @@ class Song(object):
         self.loops = loops
         self.fileid = fileid
 
+    def __repr__(self):
+        return 'Song - filename: %s, url: %s'%(self.filename, self.url)
+
 
 class QueueItem(object):
     def __init__(self, songs=[]):
         self.songs = songs
+
+    def __repr__(self):
+        return 'QueueItem - songs: %d'%(len(self.songs))
 
 
 class EnqueueRequest(object):
     def __init__(self, username, queueitems=[]):
         self.username = username
         self.queueitems = queueitems
-        
-        
+
+    def __repr__(self):
+        return 'EnqueueRequest - user: %s, items: %d'%(self.username, len(self.queueitems))
+
 class SongSchema(Schema):
     filename = fields.Str(missing=None)
     url = fields.Str(missing=None, allow_none=True)
