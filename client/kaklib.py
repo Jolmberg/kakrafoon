@@ -10,6 +10,9 @@ class Client(object):
         self.server_url = url
         self.username = username
 
+    def connection_error(self):
+        print("Connection failed, server %s, user %s"%(self.server_url, self.username))
+
     def enqueue(self, items):
         files = []
         i = 0
@@ -32,7 +35,7 @@ class Client(object):
             else:
                 print("Server complained with message: %s" % (r.text,))
         except requests.exceptions.ConnectionError:
-            print("Connection failed")
+            self.connection_error()
 
     def get_queue(self):
         """Retrieve the current queue"""
@@ -42,25 +45,25 @@ class Client(object):
             q = schema.loads(r.text).data
             return q
         except requests.exceptions.ConnectionError:
-            print("Connection failed")
+            self.connection_error()
 
     def pause(self):
         """Pause playback"""
         try:
             r = requests.post(self.server_url + '/pause')
         except requests.exceptions.ConnectionError:
-            print("Connection failed")
+            self.connection_error()
 
     def resume(self):
         """Resume playback"""
         try:
             r = requests.post(self.server_url + '/resume')
         except requests.exceptions.ConnectionError:
-            print("Connection failed")
+            self.connection_error()
 
     def skip(self):
         """Skip current song"""
         try:
             r = requests.post(self.server_url + '/skip')
         except requests.exceptions.ConnectionError:
-            print("Connection failed")
+            self.connection_error()
