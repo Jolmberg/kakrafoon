@@ -4,6 +4,7 @@ import os
 import requests
 import kakmsg.enqueue
 import kakmsg.queue
+import kakmsg.volume
 import werkzeug
 
 class Client(object):
@@ -21,7 +22,7 @@ class Client(object):
             for song in item.songs:
                 song.fileid = 'f' + str(i).zfill(7)
                 realname = song.filename
-                song.filename = os.path.basename(song.filename)
+                song.filename = os.path.basename(song.filename).encode('utf-8','replace').decode()
                 secure_filename = werkzeug.secure_filename(song.filename)
                 files.append((song.fileid, (secure_filename, open(realname, 'rb'))))
                 i += 1
@@ -74,5 +75,26 @@ class Client(object):
         """Skip current song"""
         try:
             r = requests.post(self.server_url + '/skip')
+        except requests.exceptions.ConnectionError:
+            self.connection_error()
+
+    def get_volume(self):
+        """Get current volume"""
+        try:
+            r = requests.get(self.server_url + '/volume')
+            schema = kakmsg.volume.VolumeSchema()
+            v = schema.loads(r.text).data
+            return v
+        except requests.exceptions.ConnectionError:
+            self.connection_error()
+
+    def set_volume(self, volume, channel=None, control=None):
+        """Set volume"""
+        try:
+            setrequest = kakmsg.volume.SetRequest(volume, channel, control)
+            setrequests = kakmsg.volume.SetRequests([setrequest])
+            schema = kakmsg.volume.SetRequestsSchema()
+            json = schema.dumps(setrequests)
+            r = requests.post(self.server_url + '/volume', data={'volume_set_requests':json})
         except requests.exceptions.ConnectionError:
             self.connection_error()

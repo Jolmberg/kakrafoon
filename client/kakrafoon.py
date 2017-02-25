@@ -17,6 +17,42 @@ def print_queue(queue):
         for s in i.songs:
             print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
+def print_volume(volume):
+    for control in volume.controls:
+        print(control.name)
+        for channel in control.channels:
+            print("  %-16s %d" % (channel.name, channel.volume))
+
+
+class VolumeString(object):
+    """Parses arguments passed with the volume flag"""
+    def __init__(self, string):
+        if string.isnumeric():
+            self.control = None
+            self.channel = None
+            self.volume = int(string)
+        else:
+            if string.count('=') == 1:
+                [lvalue, vol] = string.split('=')
+                if not vol.isnumeric():
+                    raise TypeError('Bad volume string')
+                self.volume = vol
+                if '/' not in lvalue:
+                    if lvalue in ['front-left', 'front-right']:
+                        self.control = None
+                        self.channel = lvalue
+                    else:
+                        self.control = lvalue
+                        self.channel = None
+                elif lvalue.count('/') == 1:
+                    [control, channel] = lvalue.split('/')
+                    self.control = control
+                    self.channel = channel
+                else:
+                    raise TypeError('Bad volume string')
+            else:
+                raise TypeError('Bad volume string')
+
 
 if __name__ == '__main__':
     parser1 = argparse.ArgumentParser(add_help=False)
@@ -50,6 +86,10 @@ if __name__ == '__main__':
                         help='skip current song')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
+    group1.add_argument('-m', '--volume', nargs='?', metavar='V', action='append',
+                        type=VolumeString,
+                        help='get or set the volume - V is either volume, channel=volume,'
+                        + ' control=volume, or control/channel=volume' )
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
     group1.add_argument('-q', '--queue', action='store_true',
@@ -115,5 +155,13 @@ if __name__ == '__main__':
         client.enqueue(queueitems)
     elif args.remove:
         client.dequeue(args.remove)
+    elif args.volume is not None:
+        for v in args.volume:
+            if v is None:
+                volume = client.get_volume()
+                if volume:
+                    print_volume(volume)
+            else:
+                client.set_volume(v.volume, channel=v.channel, control=v.control)
     else:
         parser.print_help()

@@ -3,9 +3,11 @@
 import os
 import kakmsg.enqueue
 import kakmsg.queue
+import kakmsg.volume
 import kakqueue
 import songpool
 import control
+import volume
 from flask import Flask, request
 app = Flask(__name__)
 
@@ -48,7 +50,6 @@ def queue_add():
     if 'enqueue_request' in request.form:
         schema = kakmsg.enqueue.EnqueueRequestSchema()
         enqueue_request = schema.loads(request.form['enqueue_request']).data
-        print(enqueue_request)
 
     new_items = []
     claimed_files = set()
@@ -126,6 +127,31 @@ def resume():
 def skip():
     control.skip()
     return ''
+
+@app.route('/volume', methods=['GET'])
+def volume_get():
+    vol = volume.get_all()
+    v = kakmsg.volume.Volume([kakmsg.volume.Control(name, [kakmsg.volume.Channel(name, x)
+                                                           for (name, x) in channels.items()])
+                              for (name, channels) in vol.items()])
+    schema = kakmsg.volume.VolumeSchema()
+    json = schema.dumps(v)
+    print(vol)
+    print(json)
+
+    return json.data
+
+@app.route('/volume', methods=['POST'])
+def volume_set():
+    if 'volume_set_requests' in request.form:
+        schema = kakmsg.volume.SetRequestsSchema()
+        volume_set_requests = schema.loads(request.form['volume_set_requests']).data
+        print(volume_set_requests)
+        for r in volume_set_requests.set_requests:
+            print(r)
+            volume.set(r.volume, r.channel, r.control)
+            return ''
+
 
 if __name__ == '__main__':
     app.debug=True
