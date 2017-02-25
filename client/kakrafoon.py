@@ -17,6 +17,12 @@ def print_queue(queue):
         for s in i.songs:
             print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
+def print_volume(volume):
+    for control in volume.controls:
+        print(control.name)
+        for channel in control.channels:
+            print("  %-16s %d" % (channel.name, channel.volume))
+
 
 if __name__ == '__main__':
     parser1 = argparse.ArgumentParser(add_help=False)
@@ -50,6 +56,8 @@ if __name__ == '__main__':
                         help='skip current song')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
+    group1.add_argument('-m', '--volume', nargs='?', metavar='V', action='append',
+                        help='get or set the volume')
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
     group1.add_argument('-q', '--queue', action='store_true',
@@ -115,5 +123,14 @@ if __name__ == '__main__':
         client.enqueue(queueitems)
     elif args.remove:
         client.dequeue(args.remove)
+    elif args.volume is not None:
+        for v in args.volume:
+            if v is None:
+                volume = client.get_volume()
+                if volume:
+                    print_volume(volume)
+            else:
+                if v.isnumeric():
+                    client.set_volume(v)
     else:
         parser.print_help()
