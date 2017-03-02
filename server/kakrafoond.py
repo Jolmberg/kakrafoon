@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import uuid
 import os
 import kakmsg.enqueue
 import kakmsg.queue
@@ -45,8 +44,6 @@ def queue_add():
     Request can optionally contain an enqueue_request parameter.
     Otherwise, each file posted is queued as a separate item.
     """
-    request_id = str(uuid.uuid4())
-    to_play = []
     enqueue_request = None
     if 'enqueue_request' in request.form:
         schema = kakmsg.enqueue.EnqueueRequestSchema()
