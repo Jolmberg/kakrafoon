@@ -39,6 +39,13 @@ class Client(object):
         except requests.exceptions.ConnectionError:
             self.connection_error()
 
+    def dequeue(self, items):
+        """Dequeue item(s)"""
+        if len(items) == 1:
+            requests.delete(self.server_url + '/queue/' + items[0])
+        else:
+            print("Multi-delete not supported yet")
+
     def get_queue(self):
         """Retrieve the current queue"""
         try:

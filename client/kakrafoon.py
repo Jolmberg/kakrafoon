@@ -54,7 +54,7 @@ if __name__ == '__main__':
                        help='pause playback')
     group1.add_argument('-q', '--queue', action='store_true',
                         help='show the current queue')
-    group1.add_argument('-r', '--remove', metavar='ID',
+    group1.add_argument('-r', '--remove', nargs='*', metavar='ID',
                        help='remove entry ID from the queue')
     parser.add_argument('-s', '--server', type=str, metavar='URL',
                         required = "server" not in defaults,
@@ -113,5 +113,7 @@ if __name__ == '__main__':
             queueitems = [kakmsg.enqueue.QueueItem([s]) for s in songs]
 
         client.enqueue(queueitems)
+    elif args.remove:
+        client.dequeue(args.remove)
     else:
         parser.print_help()

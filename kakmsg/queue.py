@@ -24,6 +24,9 @@ class QueueItem(object):
         else:
             self.songs = songs
 
+    def __repr__(self):
+        return '<kakmsg.queue.QueueItem key=%s user=%s songs=%d>'%(self.key, self.user, len(self.songs))
+
 
 class Queue(object):
     def __init__(self, items=[]):

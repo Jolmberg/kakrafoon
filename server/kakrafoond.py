@@ -112,7 +112,8 @@ def queue_show():
 
 @app.route('/queue/<qid>', methods=['DELETE'])
 def queue_delete(qid):
-    print('Deleting item ' + qid + ' from queue.')
+    kqueue.dequeue(int(qid))
+    return ''
 
 @app.route('/pause', methods=['POST'])
 def pause():
