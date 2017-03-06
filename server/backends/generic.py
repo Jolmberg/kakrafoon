@@ -7,7 +7,7 @@ regexps = {
     '.*Vorbis audio.*' : ('ogg123', ['/usr/bin/ogg123'], None, None),
     '.*PlaySID.*' : ('sidplay2', ['/usr/bin/sidplay2', '-os'], '-o$s', None),
     '.*NES Sound File.*' : ('nosefart', ['/usr/bin/nosefart', '-l 1200', '-a 2'], '-t $s', '-a $l'),
-    '.*(Fastt|ScreamT|Prot)racker.*' : ('mikmod', ['/usr/bin/mikmod', '-hq', '-q'], None, None),
+    '.*(Fastt|ScreamT|Impulse T|Prot)racker.*' : ('mikmod', ['/usr/bin/mikmod', '-hq', '-q'], None, None),
     '.*MPEG.*' : ('mplayer', ['/usr/bin/mplayer'], None, None)
 }
 
