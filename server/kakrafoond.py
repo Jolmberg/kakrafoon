@@ -8,7 +8,7 @@ import kakqueue
 import songpool
 import control
 import volume
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 app = Flask(__name__)
 
 kqueue = kakqueue.Queue()
@@ -151,6 +151,10 @@ def volume_set():
             print(r)
             volume.set(r.volume, r.channel, r.control)
             return ''
+
+@app.route('/')
+def index():
+    return send_from_directory('static','index.html')
 
 
 if __name__ == '__main__':
