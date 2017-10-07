@@ -9,12 +9,14 @@ import kakqueue
 import songpool
 import control
 import volume
+import stats
 from flask import Flask, request
 app = Flask(__name__)
 
 kqueue = kakqueue.Queue()
 kpool = songpool.SongPool()
-control = control.Control(kpool, kqueue)
+kstats = stats.Stats()
+control = control.Control(kpool, kqueue, kstats)
 
 control.start()
 

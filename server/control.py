@@ -1,7 +1,8 @@
-import threading
+import kakraplay
 import os
 import stopwatch
-import kakraplay
+import traceback
+import threading
 from config import dictionary as config
 
 def synchronised(f):
@@ -18,10 +19,11 @@ def synchronised(f):
 
 class Control(threading.Thread):
 
-    def __init__(self, kpool, kqueue):
+    def __init__(self, kpool, kqueue, kstats):
         self.lock = threading.Lock()
         self.pool = kpool
         self.queue = kqueue
+        self.stats = kstats
         self.item = None
         self.songs = []
         self.song = None
@@ -94,6 +96,18 @@ class Control(threading.Thread):
             self.playing = False
 
             self.lock.acquire()
+            try:
+                self.stats.log_song(self.item.user,
+                                    self.song.filename,
+                                    self.song.hash,
+                                    self.player.get_subtune(),
+                                    self.player.get_loops(),
+                                    self.stopwatch.start_time,
+                                    self.stopwatch.read(),
+                                    self.skip_current_song or self.skip_current_item)
+            except Exception as e:
+                # Log this
+                traceback.print_exc()
             self.skip_current_song = False
             if self.skip_current_item:
                 self.skip_current_item = False
