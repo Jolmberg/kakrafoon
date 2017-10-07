@@ -13,7 +13,7 @@ import kaklib
 import kakmsg.enqueue
 
 
-def format_song_time(seconds):
+def format_time(seconds):
     hours = seconds // 3600
     seconds -= hours * 3600
     minutes = seconds // 60
@@ -73,6 +73,62 @@ def print_queue_simple(queue, truncate):
                 fmt = '{:04d}.{:02d}  {:{user}.{user}}  {:.{song}}'
             print(fmt.format(i.key, s.key, i.user, s.filename, user=longestalloweduser, song=longestallowedsong))
 
+def print_table(columns, truncate_order, data):
+    cols = 80
+    truncate = True
+    if sys.stdout.isatty():
+        cols = shutil.get_terminal_size((80,24)).columns
+
+    # Get max lengths for all columns
+    maxlength = dict((column[0], 0) for column in columns)
+    for row in data:
+        for column in columns:
+            c = column[0]
+            if c in row:
+                if c not in maxlength:
+                    maxlength[c] = len(str(row[c]))
+                else:
+                    maxlength[c] = max(maxlength[c], len(str(row[c])))
+
+    # Get min lengths for all columns
+    minlength = {}
+    for column in columns:
+        c = column[0]
+        m = column[1]
+        if c not in truncate_order:
+            minlength[c] = maxlength[c]
+        else:
+            minlength[c] = m
+
+    spaces = 2 * (len(minlength) - 1)
+    minwidth = sum(v for v in minlength.values()) + spaces
+    width = sum(v for v in maxlength.values()) + spaces
+    if minwidth <= cols:
+        # Truncate if needed
+        if width > cols:
+            for col in truncate_order:
+                gain = maxlength[col] - minlength[col]
+                if width - gain > cols:
+                    maxlength[col] = minlength[col]
+                    width = width - gain
+                else:
+                    maxlength[col] = maxlength[col] - (width - cols)
+                    break
+
+    for row in data:
+        line = []
+        for column in columns:
+            c = column[0]
+            s = ''
+            if c in row:
+                s = str(row[c])[:maxlength[c]]
+            if column[2] == 'l':
+                s = s.ljust(maxlength[c], ' ')
+            elif column[2] == 'r':
+                s = s.rjust(maxlength[c], ' ')
+            line.append(s)
+        print('  '.join(line))
+
 def print_queue_fancy(queue):
     if not queue.items:
         print("Oh noes, the queue is empty.")
@@ -82,7 +138,7 @@ def print_queue_fancy(queue):
             line = s.filename
             if s.key == queue.current_song:
                 if queue.current_song_time is not None:
-                    current_song_time = format_song_time(queue.current_song_time)
+                    current_song_time = format_time(queue.current_song_time)
                     line += ' (%s)' % (current_song_time,)
                 if not queue.playing:
                     line += ' (paused)'
@@ -210,6 +266,8 @@ if __name__ == '__main__':
                         help='resume playback')
     group1.add_argument('-f', '--shuffle', action='store_true',
                         help='shuffle songs')
+    group1.add_argument('-i', '--highscore', type=str, nargs='+', metavar='I', action='append',
+                        help='Show high scores, use --highscore help for more info'),
     group1.add_argument('-k', '--skip', action='store_true',
                         help='skip current queue entry')
     group1.add_argument('-K', '--skip-item', action='store_true',
@@ -316,6 +374,41 @@ if __name__ == '__main__':
                             volume_printed = True
                 else:
                     client.set_volume(v.volume, channel=v.channel, mixer=v.mixer, relative=v.relative)
+        elif args.highscore is not None:
+            args = args.highscore[-1]
+            if args == ['help']:
+                print("""Format: METRIC [user U] [song S] [limit N] [reverse]
+ METRIC is one of songs_by_plays, songs_by_playtime, songs_by_users,
+ users_by_plays, users_by_playtime, users_by_songs.
+ Results can optionally be filtered to a single user or song.
+ User can be given as user id or username. Song must always be song id.
+ Examples:
+  To list the five least played songs:
+   "songs_by_plays limit 5 reverse"
+  To list the ten users who have spent the most time playing song 1:
+   "users_by_playtime song 1 limit 10""")
+            else:
+                metric = args[0]
+                kwargs = {}
+                args.pop(0)
+                while args:
+                    if args[0] == 'reverse':
+                        kwargs['reverse'] = True
+                    else:
+                        kwargs[args[0]] = args[1]
+                        args.pop(0)
+                    args.pop(0)
+                if 'limit' in kwargs:
+                    kwargs['limit'] = int(kwargs['limit'])
+
+                data = client.stats(metric, **kwargs)
+                variable_column = metric.split('_')[-1]
+                if variable_column == 'playtime':
+                    for row in data:
+                        if 'playtime' in row:
+                            row['playtime'] = format_time(row['playtime'])
+                songoruser = metric.split('_')[0][:-1] + 'name'
+                print_table([(songoruser,1,'l'), (variable_column,-1,'r')], [songoruser], data)
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:

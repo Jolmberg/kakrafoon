@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
+import json
 import os
 import requests
 import kakmsg.enqueue
 import kakmsg.error
 import kakmsg.queue
+import kakmsg.stats
 import kakmsg.volume
 import werkzeug
-
 
 class ErrorResponse(Exception):
     def __init__(self, message, error_code):
@@ -43,10 +44,10 @@ class Client(object):
 
         enqueuerequest = kakmsg.enqueue.EnqueueRequest(self.username, items)
         schema = kakmsg.enqueue.EnqueueRequestSchema()
-        json = schema.dumps(enqueuerequest)
+        j = schema.dumps(enqueuerequest)
 
         try:
-            r = requests.post(self.server_url + '/queue', data={'enqueue_request':json}, files=files)
+            r = requests.post(self.server_url + '/queue', data={'enqueue_request':j}, files=files)
             if r.status_code == 200:
                 return
             else:
@@ -147,10 +148,39 @@ class Client(object):
 
             setrequest = kakmsg.volume.SetRequest(volume, channel, mixer)
             schema = kakmsg.volume.SetRequestSchema()
-            json = schema.dumps(setrequest)
-            r = requests.post(self.server_url + '/volume', data={'volume_set_request':json})
+            j = schema.dumps(setrequest)
+            r = requests.post(self.server_url + '/volume', data={'volume_set_request':j})
             if r.status_code != 200:
                 raise_response_error(r)
 
         except requests.exceptions.ConnectionError:
             raise ConnectionError()
+
+    def stats_songs_by_plays(self, limit=10):
+        r = requests.get(self.server_url + '/stats/songs_by_plays')
+        return json.loads(r.text)
+
+    def stats(self, metric, user=None, song=None, limit=None, reverse=False):
+        url = None
+        if user is not None:
+            userid = str(user)
+            if not userid.isnumeric():
+                r = requests.get(self.server_url + '/stats/users?username=' + user)
+                schema = kakmsg.stats.UserSchema()
+                u = schema.loads(r.text).data
+                userid = str(u.id)
+            url = '/stats/users/%s/' % (userid)
+        elif song is not None:
+            url = '/stats/songs/%s/' % (song)
+        else:
+            url = '/stats/'
+        url += metric
+        vars = []
+        if type(limit) is int and limit > 0:
+            vars.append('limit=%d' % (limit,))
+        if reverse:
+            vars.append('reverse=true')
+        if vars:
+            url += '?' + '&'.join(vars)
+        r = requests.get(self.server_url + url)
+        return json.loads(r.text)
