@@ -5,6 +5,8 @@ import configparser
 import getpass
 import urllib.parse
 import random
+import shutil
+import sys
 import os
 
 import kaklib
@@ -13,9 +15,35 @@ import kakmsg.enqueue
 def print_queue(queue):
     if not queue.items:
         print("Oh noes, the queue is empty.")
-    for i in queue.items:
-        for s in i.songs:
-            print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+        return
+
+    if not sys.stdout.isatty():
+        for i in queue.items:
+            for s in i.songs:
+                print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+    else:
+        cols = shutil.get_terminal_size((80,24)).columns
+        left = cols - 11
+        half = int(left/2)
+        shortest = min(half, 10)
+        longestuser = max(len(i.user) for i in queue.items)
+        longestsong = max(max(len(s.filename) for s in i.songs) for i in queue.items)
+        alloweduser = longestuser
+        allowedsong = longestsong
+        if longestuser + longestsong > left:
+            ratio = left / (longestuser+longestsong)
+            alloweduser=int(longestuser*ratio)
+            allowedsong=int(longestsong*ratio)
+        if alloweduser < longestuser and alloweduser < shortest:
+            alloweduser = min(shortest, longestuser)
+            allowedsong = left - alloweduser
+        elif allowedsong < longestsong and allowedsong < shortest:
+            allowedsong = min(shortest, longestsong)
+            alloweduser = left - allowedsong
+        for i in queue.items:
+            for s in i.songs:
+                print('{:04d}.{:02d}  {:{user}.{user}}  {:{song}.{song}}'.format(i.key, s.key, i.user, s.filename, user=alloweduser, song=allowedsong))
+
 
 def print_volume(volume):
     for control in volume.controls:
