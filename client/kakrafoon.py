@@ -6,6 +6,7 @@ import getpass
 import urllib.parse
 import random
 import os
+import sys
 
 import kaklib
 import kakmsg.enqueue
@@ -64,9 +65,25 @@ if __name__ == '__main__':
     config = configparser.ConfigParser()
     configfiles = [os.path.join(homedir, '.config', 'kakrafoon'),
                    os.path.join(homedir, '.kakrafoon')]
+    used_config = None
     if args.config:
-        configfiles.insert(0, args.config)
-    config.read(configfiles)
+        try:
+            f = open(args.config, 'r')
+            r = config.read_file(f)
+            used_config = args.config
+        except:
+            print('Bad configuration file')
+            sys.exit(-1)
+    else:
+        for cf in configfiles:
+            try:
+                with open(cf, 'r') as f:
+                    r = config.read_file(f)
+                    used_config = cf
+                    break
+            except:
+                pass
+
     if config.has_section('kakrafoon'):
         defaults = dict(config.items('kakrafoon'))
     else:
@@ -103,6 +120,8 @@ if __name__ == '__main__':
                         help='subtune to play')
     parser.add_argument('-u', '--user', type=str, metavar='USERNAME',
                         help='username to present to the server')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='be more verbose')
     parser.add_argument('filename', nargs='*', metavar='FILENAME',
                         help='path and/or filename to queue')
     args = parser.parse_args(remaining_argv)
@@ -110,6 +129,10 @@ if __name__ == '__main__':
     url = args.server
     username = args.user or getpass.getuser()
     client = kaklib.Client(url, username)
+
+    if args.verbose:
+        if used_config:
+            print('Using configuration file: ' + used_config)
 
     if args.queue:
         queue = client.get_queue()
