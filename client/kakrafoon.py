@@ -12,6 +12,10 @@ import kaklib
 import kakmsg.enqueue
 
 def print_queue(queue):
+    if queue.current_song and queue.items:
+        while queue.items[0].songs and queue.items[0].songs[0].key != queue.current_song:
+            queue.items[0].songs.pop(0)
+
     if not queue.items:
         print("Oh noes, the queue is empty.")
     for i in queue.items:

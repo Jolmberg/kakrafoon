@@ -21,7 +21,7 @@ class Control(threading.Thread):
         self.pool = kpool
         self.queue = kqueue
         self.item = None
-        self.song_id = 0
+        self.song = None
         self.player = None
         self.running = threading.Event()
         super(Control, self).__init__()
@@ -37,6 +37,7 @@ class Control(threading.Thread):
             self.item = self.pool.get_item(item_id)
 
             for song in self.item.songs:
+                self.song = song
                 realfilename = os.path.join('/tmp/kakrafoon',str(self.item.key), str(song.key))
                 print(realfilename)
                 self.player = kakraplay.get_player(realfilename,
