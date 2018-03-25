@@ -32,7 +32,6 @@ class _QueueItem(object):
     def __repr__(self):
         return "<_Queue_item obj: %s, user: %s, songs: %d>"%(self.obj, self.user, self.songs)
 
-
 class Queue(object):
     def __init__(self):
         self.user_order = []
@@ -41,6 +40,9 @@ class Queue(object):
         self.nonempty = threading.Event()
         self.lock = threading.Lock()
         self.obj_item = {}
+
+    def _debug_str(self):
+        return 'user_order: %s\nuser_skip: %s'%(str(self.user_order), str(self.user_skip))
 
     def _purge_user(self, user):
         """Remove all traces of a user from the queue"""
@@ -51,12 +53,21 @@ class Queue(object):
     @synchronised
     def enqueue(self, obj, user, songs, length=None):
         """Add an item to the queue"""
-
         item = _QueueItem(obj, user, songs, length)
         if not user in self.user_order:
-            self.user_order.append(user)
+            user_position = 0
+            if not self.user_order:
+                self.user_skip[user] = 0
+            else:
+                for u in self.user_order:
+                    if self.user_skip[u] == 0:
+                        break
+                    user_position += 1
+                self.user_skip[user] = 1
+
+            self.user_order.insert(user_position, user)
             self.user_queue[user] = []
-            self.user_skip[user] = 0
+
         self.user_queue[user].append(item)
         self.obj_item[obj] = item
         self.nonempty.set()
@@ -181,6 +192,16 @@ class QueueTest(unittest.TestCase):
         self.assertEqual(q.get_all(), ['Ay1','Bx3','Cx2','Az2','Cy2','By1'])
         q.dequeue('Bx3')
         self.assertEqual(q.get_all(), ['Ay1','By1','Cx2','Az2','Cy2'])
+
+    def test_enqueue(self):
+        q = Queue()
+        q.enqueue('a1', 'A', 1)
+        q.enqueue('b1', 'B', 1)
+        q.enqueue('a2', 'A', 1)
+        q.enqueue('b2', 'B', 1)
+        q.pop()
+        q.enqueue('c1', 'C', 1)
+        self.assertEqual(q.get_all(), ['b1', 'a2', 'c1', 'b2'])
 
 if __name__ == '__main__':
     unittest.main()
