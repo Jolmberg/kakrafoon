@@ -24,6 +24,7 @@ class Control(threading.Thread):
         self.song = None
         self.player = None
         self.running = threading.Event()
+        self.skip_current_item = False
         super(Control, self).__init__()
 
     def run(self):
@@ -45,7 +46,10 @@ class Control(threading.Thread):
                                                    loops=song.loops)
                 # What if pause has been called by now!? Make this stuff thread safe!
                 self.player.play()
+                if self.skip_current_item:
+                    break
             self.pool.remove_item(item_id)
+            self.skip_current_item = False
             self.queue.pop()
 
     def pause(self):
@@ -60,4 +64,9 @@ class Control(threading.Thread):
 
     def skip(self):
         if self.player:
+            self.player.abort()
+
+    def skip_item(self):
+        if self.player:
+            self.skip_current_item = True
             self.player.abort()

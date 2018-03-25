@@ -104,7 +104,9 @@ if __name__ == '__main__':
     group1.add_argument('-f', '--shuffle', action='store_true',
                         help='shuffle songs')
     group1.add_argument('-k', '--skip', action='store_true',
-                        help='skip current song')
+                        help='skip current queue entry')
+    group1.add_argument('-K', '--skip-item', action='store_true',
+                        help='skip current item')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
     group1.add_argument('-m', '--volume', nargs='?', metavar='V', action='append',
@@ -149,6 +151,8 @@ if __name__ == '__main__':
             client.resume()
         elif args.skip:
             client.skip()
+        elif args.skip_item:
+            client.skip_item()
         elif args.filename:
             songs = []
             i = 0

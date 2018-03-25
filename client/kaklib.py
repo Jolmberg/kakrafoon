@@ -95,6 +95,13 @@ class Client(object):
         except requests.exceptions.ConnectionError:
             self.connection_error()
 
+    def skip_item(self):
+        """Skip current item"""
+        try:
+            r = requests.post(self.server_url + '/skip_item')
+        except requests.exceptions.ConnectionError:
+            self.connection_error()
+
     def get_volume(self):
         """Get current volume"""
         try:

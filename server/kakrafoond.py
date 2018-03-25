@@ -140,6 +140,11 @@ def skip():
     control.skip()
     return ''
 
+@app.route('/skip_item', methods=['POST'])
+def skip_item():
+    control.skip_item()
+    return ''
+
 @app.route('/volume', methods=['GET'])
 def volume_get():
     vol = volume.get_all()
