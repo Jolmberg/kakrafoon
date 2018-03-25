@@ -4,6 +4,7 @@ import os
 import kakmsg.enqueue
 import kakmsg.queue
 import kakmsg.volume
+import kakmsg.error
 import kakqueue
 import songpool
 import control
@@ -37,6 +38,11 @@ def make_song(key, filename=None, url=None, enqueue_song=None):
     return song
 
 
+def make_error(http_code, error_code, msg):
+    err = kakmsg.error.Error(error_code, msg)
+    schema = kakmsg.error.ErrorSchema()
+    json = schema.dumps(err)
+    return (json.data, http_code, { 'Content-Type' : 'application/json' })
 
 
 @app.route('/queue', methods=['POST'])
@@ -109,9 +115,13 @@ def queue_show():
     json = schema.dumps(q)
     return json.data
 
-
 @app.route('/queue/<qid>', methods=['DELETE'])
 def queue_delete(qid):
+    item_id = int(qid)
+    if item_id == kqueue.get_first():
+        msg = 'Cannot dequeue the first item in the queue, try skipping instead.'
+        return make_error(400, 1, msg)
+
     kqueue.dequeue(int(qid))
     return ''
 

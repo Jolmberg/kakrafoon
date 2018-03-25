@@ -3,9 +3,24 @@
 import os
 import requests
 import kakmsg.enqueue
+import kakmsg.error
 import kakmsg.queue
 import kakmsg.volume
 import werkzeug
+
+
+class ErrorResponse(Exception):
+    def __init__(self, message, error_code):
+        super(ErrorResponse, self).__init__(message)
+        self.message = message
+        self.error_code = error_code
+
+
+def raise_response_error(response):
+    schema = kakmsg.error.ErrorSchema()
+    err = schema.loads(response.text).data
+    raise ErrorResponse(err.message, err.error_code)
+
 
 class Client(object):
     def __init__(self, url, username):
@@ -43,7 +58,9 @@ class Client(object):
     def dequeue(self, items):
         """Dequeue item(s)"""
         if len(items) == 1:
-            requests.delete(self.server_url + '/queue/' + items[0])
+            r = requests.delete(self.server_url + '/queue/' + items[0])
+            if r.status_code != 200:
+                raise_response_error(r)
         else:
             print("Multi-delete not supported yet")
 

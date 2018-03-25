@@ -138,57 +138,60 @@ if __name__ == '__main__':
         if used_config:
             print('Using configuration file: ' + used_config)
 
-    if args.queue:
-        queue = client.get_queue()
-        if queue:
-            print_queue(queue)
-    elif args.pause:
-        client.pause()
-    elif args.resume:
-        client.resume()
-    elif args.skip:
-        client.skip()
-    elif args.filename:
-        songs = []
-        i = 0
-        filenames = args.filename[:]
-        if args.shuffle:
-            random.shuffle(filenames)
-        for f in filenames:
-            scheme = urllib.parse.urlparse(f).scheme
-            if scheme=='':
-                song = kakmsg.enqueue.Song(filename=f)
+    try:
+        if args.queue:
+            queue = client.get_queue()
+            if queue:
+                print_queue(queue)
+        elif args.pause:
+            client.pause()
+        elif args.resume:
+            client.resume()
+        elif args.skip:
+            client.skip()
+        elif args.filename:
+            songs = []
+            i = 0
+            filenames = args.filename[:]
+            if args.shuffle:
+                random.shuffle(filenames)
+            for f in filenames:
+                scheme = urllib.parse.urlparse(f).scheme
+                if scheme=='':
+                    song = kakmsg.enqueue.Song(filename=f)
+                else:
+                    song = kakmsg.enqueue.Song(url=f)
+
+                try:
+                    song.subtune = args.subtune[i]
+                except Exception:
+                    pass
+
+                try:
+                    song.loops = args.loops[i]
+                except Exception:
+                    pass
+
+                songs.append(song)
+                i += 1
+
+            if args.blob:
+                queueitems = [kakmsg.enqueue.QueueItem(songs)]
             else:
-                song = kakmsg.enqueue.Song(url=f)
+                queueitems = [kakmsg.enqueue.QueueItem([s]) for s in songs]
 
-            try:
-                song.subtune = args.subtune[i]
-            except Exception:
-                pass
-
-            try:
-                song.loops = args.loops[i]
-            except Exception:
-                pass
-
-            songs.append(song)
-            i += 1
-
-        if args.blob:
-            queueitems = [kakmsg.enqueue.QueueItem(songs)]
+            client.enqueue(queueitems)
+        elif args.remove:
+            client.dequeue(args.remove)
+        elif args.volume is not None:
+            for v in args.volume:
+                if v is None:
+                    volume = client.get_volume()
+                    if volume:
+                        print_volume(volume)
+                else:
+                    client.set_volume(v.volume, channel=v.channel, control=v.control)
         else:
-            queueitems = [kakmsg.enqueue.QueueItem([s]) for s in songs]
-
-        client.enqueue(queueitems)
-    elif args.remove:
-        client.dequeue(args.remove)
-    elif args.volume is not None:
-        for v in args.volume:
-            if v is None:
-                volume = client.get_volume()
-                if volume:
-                    print_volume(volume)
-            else:
-                client.set_volume(v.volume, channel=v.channel, control=v.control)
-    else:
-        parser.print_help()
+            parser.print_help()
+    except kaklib.ErrorResponse as e:
+        print(e.message)
