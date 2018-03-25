@@ -3,7 +3,7 @@ import unittest
 
 # A queue is an ordered collection of items.
 # Each item has the following properties:
-# obj - reference to the real queue item
+# obj - something that identifies the real queue item, typically an integer
 # user - the user who queued this item
 # songs - the number of songs in this item
 # length - total length of all songs in the item (if known)
@@ -114,6 +114,8 @@ class Queue(object):
 
     def _normalise(self):
         """Normalise skip data and clean out worthless users"""
+        if len(self.user_skip) == 0:
+            return
         m = min(self.user_skip.values())
         for x in [k for k in self.user_skip]:
             self.user_skip[x] -= m
@@ -129,6 +131,7 @@ class Queue(object):
         Note that this is different from dequeue() as pop() will retain the global
         order of items. Use pop() when removing the item that was just played.
         """
+        item = None
         for x in self.user_order:
             if self.user_skip[x] > 0:
                 continue
@@ -167,6 +170,7 @@ class QueueTest(unittest.TestCase):
             qi = q.pop()
             oi = order.pop(0)
             self.assertEqual(qi, oi)
+        self.assertIs(q.pop(), None)
         self.assertEqual(q.user_order, [])
         self.assertEqual(q.user_skip, {})
         self.assertEqual(q.user_queue, {})
