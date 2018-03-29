@@ -116,9 +116,11 @@ class Client(object):
         """Set volume"""
         try:
             setrequest = kakmsg.volume.SetRequest(volume, channel, control)
-            setrequests = kakmsg.volume.SetRequests([setrequest])
-            schema = kakmsg.volume.SetRequestsSchema()
-            json = schema.dumps(setrequests)
-            r = requests.post(self.server_url + '/volume', data={'volume_set_requests':json})
+            schema = kakmsg.volume.SetRequestSchema()
+            json = schema.dumps(setrequest)
+            r = requests.post(self.server_url + '/volume', data={'volume_set_request':json})
+            if r.status_code != 200:
+                raise_response_error(r)
+
         except requests.exceptions.ConnectionError:
             self.connection_error()

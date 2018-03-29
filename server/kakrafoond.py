@@ -160,14 +160,19 @@ def volume_get():
 
 @app.route('/volume', methods=['POST'])
 def volume_set():
-    if 'volume_set_requests' in request.form:
-        schema = kakmsg.volume.SetRequestsSchema()
-        volume_set_requests = schema.loads(request.form['volume_set_requests']).data
-        print(volume_set_requests)
-        for r in volume_set_requests.set_requests:
-            print(r)
+    if 'volume_set_request' in request.form:
+        schema = kakmsg.volume.SetRequestSchema()
+        r = schema.loads(request.form['volume_set_request']).data
+        print(r.control)
+        try:
             volume.set(r.volume, r.channel, r.control)
-            return ''
+        except volume.NoSuchControlError:
+            return make_error(400, 2000, 'Nu such mixer control.')
+        except volume.NoSuchChannelError:
+            return make_error(400, 2001, 'No such channel.')
+        except:
+            return make_error(500, 2002, 'Unknown mixer error.')
+        return ''
 
 
 if __name__ == '__main__':

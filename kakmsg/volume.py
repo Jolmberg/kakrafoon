@@ -21,13 +21,6 @@ class SetRequest(object):
         self.channel = channel
         self.volume = volume
 
-class SetRequests(object):
-    def __init__(self, set_requests=None):
-        if set_requests is None:
-            self.set_requests = []
-        else:
-            self.set_requests = set_requests
-
 
 class ChannelSchema(Schema):
     name = fields.Str(required=True)
@@ -60,10 +53,3 @@ class SetRequestSchema(Schema):
     @marshmallow.post_load
     def make_setrequest(self, data):
         return SetRequest(**data)
-
-class SetRequestsSchema(Schema):
-    set_requests = fields.Nested(SetRequestSchema, many=True)
-
-    @marshmallow.post_load
-    def make_set_requests(self, data):
-        return SetRequests(**data)
