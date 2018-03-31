@@ -15,6 +15,8 @@ class ErrorResponse(Exception):
         self.message = message
         self.error_code = error_code
 
+class ConnectionError(Exception):
+    pass
 
 def raise_response_error(response):
     schema = kakmsg.error.ErrorSchema()
@@ -26,9 +28,6 @@ class Client(object):
     def __init__(self, url, username):
         self.server_url = url
         self.username = username
-
-    def connection_error(self):
-        print("Connection failed, server %s, user %s"%(self.server_url, self.username))
 
     def enqueue(self, items):
         files = []
@@ -51,9 +50,9 @@ class Client(object):
             if r.status_code == 200:
                 return
             else:
-                print("Server complained with message: %s" % (r.text,))
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+                raise_error_response(r)
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def dequeue(self, items):
         """Dequeue item(s)"""
@@ -71,36 +70,36 @@ class Client(object):
             schema = kakmsg.queue.QueueSchema()
             q = schema.loads(r.text).data
             return q
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def pause(self):
         """Pause playback"""
         try:
             r = requests.post(self.server_url + '/pause')
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def resume(self):
         """Resume playback"""
         try:
             r = requests.post(self.server_url + '/resume')
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def skip(self):
         """Skip current song"""
         try:
             r = requests.post(self.server_url + '/skip')
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def skip_item(self):
         """Skip current item"""
         try:
             r = requests.post(self.server_url + '/skip_item')
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def get_volume(self):
         """Get current volume"""
@@ -109,8 +108,8 @@ class Client(object):
             schema = kakmsg.volume.VolumeSchema()
             v = schema.loads(r.text).data
             return v
-        except requests.exceptions.ConnectionError:
-            self.connection_error()
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionError() from e
 
     def set_volume(self, volume, channel=None, control=None):
         """Set volume"""
@@ -123,4 +122,4 @@ class Client(object):
                 raise_response_error(r)
 
         except requests.exceptions.ConnectionError:
-            self.connection_error()
+            raise ConnectionError()

@@ -199,3 +199,5 @@ if __name__ == '__main__':
             parser.print_help()
     except kaklib.ErrorResponse as e:
         print(e.message)
+    except kaklib.ConnectionError as e:
+        print("Connection failed, server %s, user %s"%(client.server_url, client.username))
