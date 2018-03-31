@@ -31,10 +31,10 @@ class Control(threading.Thread):
         item_id = None
         self.running.set()
         while True:
-            wait_for_all([self.running, self.queue.nonempty])
+            self.item = None
+            wait_for_all([self.queue.nonempty])
+            # The first item cannot be dequeued so we can assume that it exists here:
             item_id = self.queue.get_first()
-            if item_id is None:
-                continue
             self.item = self.pool.get_item(item_id)
 
             for song in self.item.songs:
@@ -44,8 +44,9 @@ class Control(threading.Thread):
                 self.player = kakraplay.get_player(realfilename,
                                                    subtune=song.subtune,
                                                    loops=song.loops)
-                # What if pause has been called by now!? Make this stuff thread safe!
+                wait_for_all([self.running])
                 self.player.play()
+                self.player = None
                 if self.skip_current_item:
                     break
             self.pool.remove_item(item_id)
@@ -67,6 +68,7 @@ class Control(threading.Thread):
             self.player.abort()
 
     def skip_item(self):
-        if self.player:
+        if self.item:
             self.skip_current_item = True
-            self.player.abort()
+            if self.player:
+                self.player.abort()
