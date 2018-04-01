@@ -108,7 +108,9 @@ def queue_add():
 @app.route('/queue', methods=['GET'])
 def queue_show():
     """Return the current queue as a queue.Queue object"""
-    current_song = control.song.key
+    current_song = None
+    if control.song:
+        current_song = control.song.key
     print(current_song)
     q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()], current_song)
     schema = kakmsg.queue.QueueSchema()
