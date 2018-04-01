@@ -111,8 +111,8 @@ def queue_show():
     current_song = None
     if control.song:
         current_song = control.song.key
-    print(current_song)
-    q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()], current_song)
+    playing = control.is_playing()
+    q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()], current_song, playing)
     schema = kakmsg.queue.QueueSchema()
     json = schema.dumps(q)
     return json.data

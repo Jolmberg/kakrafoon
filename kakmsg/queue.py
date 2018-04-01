@@ -29,9 +29,10 @@ class QueueItem(object):
 
 
 class Queue(object):
-    def __init__(self, items=[], current_song=None):
+    def __init__(self, items=[], current_song=None, playing=None):
         self.items = items
         self.current_song = current_song
+        self.playing = playing
         
         
 class SongSchema(Schema):
@@ -63,6 +64,7 @@ class QueueItemSchema(Schema):
 class QueueSchema(Schema):
     items = fields.Nested(QueueItemSchema, many=True)
     current_song = fields.Int(missing=None)
+    playing = fields.Bool(missing=None)
 
     @marshmallow.post_load
     def make_queue(self, data):

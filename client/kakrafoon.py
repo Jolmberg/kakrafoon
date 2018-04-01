@@ -16,11 +16,14 @@ def print_queue(queue):
         while queue.items[0].songs and queue.items[0].songs[0].key != queue.current_song:
             queue.items[0].songs.pop(0)
 
+    if not queue.playing:
+        print("Kakrafoon is paused\n")
     if not queue.items:
         print("Oh noes, the queue is empty.")
-    for i in queue.items:
-        for s in i.songs:
-            print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+    else:
+        for i in queue.items:
+            for s in i.songs:
+                print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
 def print_volume(volume):
     for mixer in volume.mixers:

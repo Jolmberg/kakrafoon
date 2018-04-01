@@ -72,3 +72,6 @@ class Control(threading.Thread):
             self.skip_current_item = True
             if self.player:
                 self.player.abort()
+
+    def is_playing(self):
+        return self.running.is_set()
