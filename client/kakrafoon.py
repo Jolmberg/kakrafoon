@@ -23,9 +23,9 @@ def print_queue(queue):
             print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
 def print_volume(volume):
-    for control in volume.controls:
-        print(control.name)
-        for channel in control.channels:
+    for mixer in volume.mixers:
+        print(mixer.name)
+        for channel in mixer.channels:
             print("  %-16s %d" % (channel.name, channel.volume))
 
 
@@ -33,7 +33,7 @@ class VolumeString(object):
     """Parses arguments passed with the volume flag"""
     def __init__(self, string):
         if string.isnumeric():
-            self.control = None
+            self.mixer = None
             self.channel = None
             self.volume = int(string)
         else:
@@ -44,14 +44,14 @@ class VolumeString(object):
                 self.volume = vol
                 if '/' not in lvalue:
                     if lvalue in ['front-left', 'front-right']:
-                        self.control = None
+                        self.mixer = None
                         self.channel = lvalue
                     else:
-                        self.control = lvalue
+                        self.mixer = lvalue
                         self.channel = None
                 elif lvalue.count('/') == 1:
-                    [control, channel] = lvalue.split('/')
-                    self.control = control
+                    [mixer, channel] = lvalue.split('/')
+                    self.mixer = mixer
                     self.channel = channel
                 else:
                     raise TypeError('Bad volume string')
@@ -109,10 +109,10 @@ if __name__ == '__main__':
                         help='skip current item')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
-    group1.add_argument('-m', '--volume', nargs='?', metavar='V', action='append',
+    group1.add_argument('-v', '--volume', nargs='?', metavar='V', action='append',
                         type=VolumeString,
                         help='get or set the volume - V is either volume, channel=volume,'
-                        + ' control=volume, or control/channel=volume' )
+                        + ' mixer=volume, or mixer/channel=volume' )
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
     group1.add_argument('-q', '--queue', action='store_true',
@@ -126,7 +126,7 @@ if __name__ == '__main__':
                         help='subtune to play')
     parser.add_argument('-u', '--user', type=str, metavar='USERNAME',
                         help='username to present to the server')
-    parser.add_argument('-v', '--verbose', action='store_true',
+    parser.add_argument('--verbose', action='store_true',
                         help='be more verbose')
     parser.add_argument('filename', nargs='*', metavar='FILENAME',
                         help='path and/or filename to queue')
@@ -188,13 +188,16 @@ if __name__ == '__main__':
         elif args.remove:
             client.dequeue(args.remove)
         elif args.volume is not None:
+            volume_printed = False
             for v in args.volume:
                 if v is None:
-                    volume = client.get_volume()
-                    if volume:
-                        print_volume(volume)
+                    if not volume_printed:
+                        volume = client.get_volume()
+                        if volume:
+                            print_volume(volume)
+                            volume_printed = True
                 else:
-                    client.set_volume(v.volume, channel=v.channel, control=v.control)
+                    client.set_volume(v.volume, channel=v.channel, mixer=v.mixer)
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:

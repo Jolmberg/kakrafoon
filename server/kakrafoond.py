@@ -148,14 +148,11 @@ def skip_item():
 @app.route('/volume', methods=['GET'])
 def volume_get():
     vol = volume.get_all()
-    v = kakmsg.volume.Volume([kakmsg.volume.Control(name, [kakmsg.volume.Channel(name, x)
-                                                           for (name, x) in channels.items()])
+    v = kakmsg.volume.Volume([kakmsg.volume.Mixer(name, [kakmsg.volume.Channel(name, x)
+                                                         for (name, x) in channels.items()])
                               for (name, channels) in vol.items()])
     schema = kakmsg.volume.VolumeSchema()
     json = schema.dumps(v)
-    print(vol)
-    print(json)
-
     return json.data
 
 @app.route('/volume', methods=['POST'])
@@ -163,11 +160,10 @@ def volume_set():
     if 'volume_set_request' in request.form:
         schema = kakmsg.volume.SetRequestSchema()
         r = schema.loads(request.form['volume_set_request']).data
-        print(r.control)
         try:
-            volume.set(r.volume, r.channel, r.control)
-        except volume.NoSuchControlError:
-            return make_error(400, 2000, 'Nu such mixer control.')
+            volume.set(r.volume, r.channel, r.mixer)
+        except volume.NoSuchMixerError:
+            return make_error(400, 2000, 'Nu such mixer.')
         except volume.NoSuchChannelError:
             return make_error(400, 2001, 'No such channel.')
         except:

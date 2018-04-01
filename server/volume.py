@@ -7,14 +7,14 @@ default_mixer = config['default_mixer'] if config['default_mixer'] in allowed_mi
 
 channel_names = ['front-left','front-right']
 
-class NoSuchControlError(Exception):
+class NoSuchMixerError(Exception):
     pass
 
 class NoSuchChannelError(Exception):
     pass
 
 def get_all():
-    controls = {}
+    mixers = {}
     for name in allowed_mixers:
         try:
             m = alsaaudio.Mixer(name)
@@ -28,20 +28,20 @@ def get_all():
             channels={"mono":v[0]}
         else:
             channels=dict(zip(channel_names, v))
-        controls[name] = channels
-    return controls
+        mixers[name] = channels
+    return mixers
 
-def set(volume, channel=None, control=None):
+def set(volume, channel=None, mixer=None):
     mixer = None
-    if control:
-        if control in allowed_mixers:
-            mixer = alsaaudio.Mixer(control)
+    if mixer:
+        if mixer in allowed_mixers:
+            mixer = alsaaudio.Mixer(mixer)
     else:
         if default_mixer:
             mixer = alsaaudio.Mixer(default_mixer)
 
     if not mixer:
-        raise NoSuchControlError()
+        raise NoSuchMixerError()
 
     if channel:
         if channel not in channel_names:

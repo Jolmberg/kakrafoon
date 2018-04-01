@@ -6,18 +6,18 @@ class Channel(object):
         self.name = name
         self.volume = volume
 
-class Control(object):
+class Mixer(object):
     def __init__(self, name, channels):
         self.name = name
         self.channels = channels
 
 class Volume(object):
-    def __init__(self, controls):
-        self.controls = controls
+    def __init__(self, mixers):
+        self.mixers = mixers
 
 class SetRequest(object):
-    def __init__(self, volume, channel=None, control=None):
-        self.control = control
+    def __init__(self, volume, channel=None, mixer=None):
+        self.mixer = mixer
         self.channel = channel
         self.volume = volume
 
@@ -30,23 +30,23 @@ class ChannelSchema(Schema):
     def make_channel(self, data):
         return Channel(**data)
 
-class ControlSchema(Schema):
+class MixerSchema(Schema):
     name = fields.Str(required=True)
     channels = fields.Nested(ChannelSchema, many=True)
 
     @marshmallow.post_load
-    def make_control(self, data):
-        return Control(**data)
+    def make_mixer(self, data):
+        return Mixer(**data)
 
 class VolumeSchema(Schema):
-    controls = fields.Nested(ControlSchema, many=True)
+    mixers = fields.Nested(MixerSchema, many=True)
 
     @marshmallow.post_load
     def make_volume(self, data):
         return Volume(**data)
 
 class SetRequestSchema(Schema):
-    control = fields.Str(missing=None)
+    mixer = fields.Str(missing=None)
     channel = fields.Str(missing=None)
     volume = fields.Int(required=True)
 

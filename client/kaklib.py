@@ -111,10 +111,10 @@ class Client(object):
         except requests.exceptions.ConnectionError as e:
             raise ConnectionError() from e
 
-    def set_volume(self, volume, channel=None, control=None):
+    def set_volume(self, volume, channel=None, mixer=None):
         """Set volume"""
         try:
-            setrequest = kakmsg.volume.SetRequest(volume, channel, control)
+            setrequest = kakmsg.volume.SetRequest(volume, channel, mixer)
             schema = kakmsg.volume.SetRequestSchema()
             json = schema.dumps(setrequest)
             r = requests.post(self.server_url + '/volume', data={'volume_set_request':json})
