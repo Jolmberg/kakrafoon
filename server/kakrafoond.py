@@ -139,7 +139,7 @@ def resume():
 
 @app.route('/skip', methods=['POST'])
 def skip():
-    control.skip()
+    control.skip_song()
     return ''
 
 @app.route('/skip_item', methods=['POST'])
