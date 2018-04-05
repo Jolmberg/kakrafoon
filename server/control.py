@@ -1,6 +1,6 @@
 import threading
 import os
-
+import stopwatch
 import kakraplay
 
 def synchronised(f):
@@ -27,6 +27,7 @@ class Control(threading.Thread):
         self.paused = False
         self.player = None
         self.playing = False
+        self.stopwatch = None
         self.running = threading.Event()
         self.skip_current_item = False
         self.skip_current_song = False
@@ -80,8 +81,11 @@ class Control(threading.Thread):
                 continue
             self.lock.release()
 
+            self.stopwatch = stopwatch.StopWatch()
             self.playing = True
+            self.stopwatch.start()
             self.player.play()
+            self.stopwatch.pause()
             self.playing = False
 
             self.lock.acquire()
@@ -99,6 +103,7 @@ class Control(threading.Thread):
         self.running.clear()
         if self.playing:
             self.player.pause()
+            self.stopwatch.pause()
 
     @synchronised
     def resume(self):
@@ -106,6 +111,7 @@ class Control(threading.Thread):
         self.running.set()
         if self.playing:
             self.player.resume()
+            self.stopwatch.resume()
 
     @synchronised
     def skip_song(self):

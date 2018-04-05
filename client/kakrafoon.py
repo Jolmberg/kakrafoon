@@ -11,6 +11,16 @@ import sys
 import kaklib
 import kakmsg.enqueue
 
+def format_song_time(seconds):
+    hours = seconds // 3600
+    seconds -= hours * 3600
+    minutes = seconds // 60
+    seconds -= minutes * 60
+    if hours > 0:
+        return '%02d:%02d:%02d' % (hours, minutes, seconds)
+    else:
+        return '%02d:%02d' % (minutes, seconds)
+
 def print_queue(queue):
     if queue.current_song and queue.items:
         while queue.items[0].songs and queue.items[0].songs[0].key != queue.current_song:
@@ -21,9 +31,16 @@ def print_queue(queue):
     if not queue.items:
         print("Oh noes, the queue is empty.")
     else:
+        current_song_time = None
+        if queue.current_song_time:
+            current_song_time = format_song_time(queue.current_song_time)
         for i in queue.items:
             for s in i.songs:
-                print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+                if current_song_time:
+                    print('%7s  %-10s  %-55s' % (current_song_time, i.user, s.filename))
+                    current_song_time = None
+                else:
+                    print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
 def print_volume(volume):
     for mixer in volume.mixers:

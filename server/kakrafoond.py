@@ -109,10 +109,13 @@ def queue_add():
 def queue_show():
     """Return the current queue as a queue.Queue object"""
     current_song = None
+    current_song_time = None
     if control.song:
         current_song = control.song.key
+        current_song_time = control.stopwatch.read()
     playing = control.is_playing()
-    q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()], current_song, playing)
+    q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()],
+                           playing, current_song, current_song_time)
     schema = kakmsg.queue.QueueSchema()
     json = schema.dumps(q)
     return json.data
