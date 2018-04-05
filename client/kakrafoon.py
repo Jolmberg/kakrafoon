@@ -11,19 +11,48 @@ import sys
 import kaklib
 import kakmsg.enqueue
 
-def print_queue(queue):
-    if queue.current_song and queue.items:
-        while queue.items[0].songs and queue.items[0].songs[0].key != queue.current_song:
-            queue.items[0].songs.pop(0)
+def format_song_time(seconds):
+    hours = seconds // 3600
+    seconds -= hours * 3600
+    minutes = seconds // 60
+    seconds -= minutes * 60
+    if hours > 0:
+        return '%02d:%02d:%02d' % (hours, minutes, seconds)
+    else:
+        return '%02d:%02d' % (minutes, seconds)
 
-    if not queue.playing:
-        print("Kakrafoon is paused\n")
+def print_queue(queue):
+    current_song = None
+    if queue.current_song and queue.items:
+        for s in queue.items[0].songs:
+            if s.key == queue.current_song:
+                current_song = s
+        if current_song:
+            while queue.items[0].songs[0].key != queue.current_song:
+                queue.items[0].songs.pop(0)
+
     if not queue.items:
         print("Oh noes, the queue is empty.")
     else:
-        for i in queue.items:
-            for s in i.songs:
-                print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+        print('%s is playing:' % (queue.items[0].user))
+        for s in queue.items[0].songs:
+            line = s.filename
+            if s.key == queue.current_song:
+                if queue.current_song_time is not None:
+                    current_song_time = format_song_time(queue.current_song_time)
+                    line += ' (%s)' % (current_song_time,)
+                if not queue.playing:
+                    line += ' (paused)'
+            print(line)
+
+        if len(queue.items) > 1:
+            if len(queue.items[0].songs) > 1:
+                print('\nUp soon:')
+            else:
+                print('\nUp next:')
+            for i in queue.items[1:]:
+                for s in i.songs:
+                    print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
 
 def print_volume(volume):
     for mixer in volume.mixers:
