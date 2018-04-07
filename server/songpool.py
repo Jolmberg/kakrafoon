@@ -43,3 +43,23 @@ class SongPool(object):
             return True
         else:
             return False
+
+    def remove_song(self, item_id, song_id):
+        """Removes a song from an item and deletes its file"""
+        if not item_id in self.items:
+            print("Item not found")
+            return False
+        item = self.items[item_id]
+        song = None
+        for s in item.songs:
+            print("key: " + str(s.key))
+            if s.key == song_id:
+                song = s
+                break
+        else:
+            print("Song not found")
+            return False
+        print(song)
+        item.songs.remove(song)
+        os.remove(os.path.join('/tmp/kakrafoon', str(item_id), str(song_id)))
+        return True

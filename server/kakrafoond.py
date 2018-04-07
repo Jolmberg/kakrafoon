@@ -104,7 +104,6 @@ def queue_add():
     print('%d new item(s) added' % len(new_items))
     return ''
 
-
 @app.route('/queue', methods=['GET'])
 def queue_show():
     """Return the current queue as a queue.Queue object"""
@@ -121,14 +120,30 @@ def queue_show():
     json = schema.dumps(q)
     return json.data
 
-@app.route('/queue/<qid>', methods=['DELETE'])
-def queue_delete(qid):
-    item_id = int(qid)
+@app.route('/queue/<item_id>', methods=['DELETE'])
+def queue_delete_item(item_id):
+    item_id = int(item_id)
     if item_id == kqueue.get_first():
         msg = 'Cannot dequeue the first item in the queue, try skipping instead.'
         return make_error(400, 1, msg)
 
-    kqueue.dequeue(int(qid))
+    kqueue.dequeue(item_id)
+    kpool.remove_item(item_id)
+    return ''
+
+@app.route('/queue/<item_id>/<song_id>', methods=['DELETE'])
+def queue_delete_song(item_id, song_id):
+    item_id = int(item_id)
+    song_id = int(song_id)
+    if item_id == kqueue.get_first():
+        msg = 'Cannot dequeue anything within the first item in the queue, try skipping instead.'
+        return make_error(400, 2, msg)
+    item = kpool.get_item(item_id)
+    if len(item.songs) == 1:
+        kqueue.dequeue(item_id)
+        kpool.remove_item(item_id)
+    else:
+        kpool.remove_song(item_id, song_id)
     return ''
 
 @app.route('/pause', methods=['POST'])

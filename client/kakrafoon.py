@@ -91,6 +91,29 @@ class VolumeString(object):
                 raise TypeError('Bad volume string')
 
 
+class RemoveString(object):
+    """Parses argument passed with the remove flag"""
+    def __init__(self, string):
+        if string.isnumeric():
+            self.item = int(string)
+            self.song = None
+        else:
+            for sep in ['.', '/']:
+                if string.count(sep) == 1:
+                    strings = string.split(sep)
+                    if all(x.isnumeric() for x in strings):
+                        self.item = int(strings[0])
+                        self.song = int(strings[1])
+                        break
+                    else:
+                        raise TypeError('Bad item/song id')
+            else:
+                raise TypeError('Bad item/song id')
+
+    def __repr__(self):
+        return '%d %d' % (self.item, self.song)
+
+
 if __name__ == '__main__':
     parser1 = argparse.ArgumentParser(add_help=False)
     parser1.add_argument('-c', '--config', metavar='FILE',
@@ -149,8 +172,9 @@ if __name__ == '__main__':
                        help='pause playback')
     group1.add_argument('-q', '--queue', action='store_true',
                         help='show the current queue')
-    group1.add_argument('-r', '--remove', nargs='*', metavar='ID',
-                       help='remove entry ID from the queue')
+    group1.add_argument('-r', '--remove', nargs=1, metavar='ID', action='append',
+                        type=RemoveString,
+                        help='remove entry ID from the queue')
     parser.add_argument('-s', '--server', type=str, metavar='URL',
                         required = "server" not in defaults,
                         help='url of kakrafoond server')
@@ -218,7 +242,8 @@ if __name__ == '__main__':
 
             client.enqueue(queueitems)
         elif args.remove:
-            client.dequeue(args.remove)
+            for r in args.remove:
+                client.dequeue(r[0].item, r[0].song)
         elif args.volume is not None:
             volume_printed = False
             for v in args.volume:

@@ -54,14 +54,12 @@ class Client(object):
         except requests.exceptions.ConnectionError as e:
             raise ConnectionError() from e
 
-    def dequeue(self, items):
-        """Dequeue item(s)"""
-        if len(items) == 1:
-            r = requests.delete(self.server_url + '/queue/' + items[0])
-            if r.status_code != 200:
-                raise_response_error(r)
-        else:
-            print("Multi-delete not supported yet")
+    def dequeue(self, item_id, song_id=None):
+        """Dequeue item/song"""
+        id = str(item_id) + (('/' + str(song_id)) if song_id else '')
+        r = requests.delete(self.server_url + '/queue/' + id)
+        if r.status_code != 200:
+            raise_response_error(r)
 
     def get_queue(self):
         """Retrieve the current queue"""
