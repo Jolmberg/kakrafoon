@@ -123,7 +123,8 @@ if __name__ == '__main__':
     homedir = os.path.expanduser('~')
     config = configparser.ConfigParser()
     configfiles = [os.path.join(homedir, '.config', 'kakrafoon'),
-                   os.path.join(homedir, '.kakrafoon')]
+                   os.path.join(homedir, '.kakrafoon'),
+                   '/etc/kakrafoon.conf']
     used_config = None
     if args.config:
         try:
