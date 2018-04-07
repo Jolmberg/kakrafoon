@@ -6,10 +6,13 @@ import getpass
 import urllib.parse
 import random
 import os
+import shutil
 import sys
 
 import kaklib
 import kakmsg.enqueue
+
+config = {}
 
 def format_song_time(seconds):
     hours = seconds // 3600
@@ -31,6 +34,52 @@ def print_queue(queue):
             while queue.items[0].songs[0].key != queue.current_song:
                 queue.items[0].songs.pop(0)
 
+    style = "fancy"
+    if sys.stdout.isatty():
+        if 'queue_style_stdout' in config:
+            style = config['queue_style']
+    else:
+        if 'queue_style' in config:
+            style = config['queue_style_stdout']
+
+    if style == "simple_long":
+        print_queue_simple(queue, False)
+    elif style == "simple":
+        print_queue_simple(queue, True)
+    else:
+        print_queue_fancy(queue)
+
+def print_queue_simple(queue, truncate):
+    if not queue.items:
+        return
+
+    cols = 80
+    if truncate:
+        if sys.stdout.isatty():
+            cols = shutil.get_terminal_size((80,24)).columns
+
+    longestuser = max(len(i.user) for i in queue.items)
+    longestsong = max(max(len(s.filename) for s in i.songs) for i in queue.items)
+    longestid = max(max((max(4, (len(str(i.key)))) + max(2,len(str(s.key)))) for s in i.songs) for i in queue.items) + 1
+    if longestid + 6 > cols:
+        truncate = False
+
+    for i in queue.items:
+        for s in i.songs:
+            fmt = None
+            longestalloweduser = 0
+            if not truncate:
+                longestalloweduser = longestuser
+                longestallowedsong = longestsong
+                fmt = '{:04d}.{:02d}  {:{user}}  {}'
+            else:
+                # Allow at least one letter for the song name
+                longestalloweduser = min(longestuser, cols - longestid - 5)
+                longestallowedsong = min(longestsong, cols - longestid - longestalloweduser - 4)
+                fmt = '{:04d}.{:02d}  {:{user}.{user}}  {:.{song}}'
+            print(fmt.format(i.key, s.key, i.user, s.filename, user=longestalloweduser, song=longestallowedsong))
+
+def print_queue_fancy(queue):
     if not queue.items:
         print("Oh noes, the queue is empty.")
     else:
@@ -121,7 +170,7 @@ if __name__ == '__main__':
     args, remaining_argv = parser1.parse_known_args()
 
     homedir = os.path.expanduser('~')
-    config = configparser.ConfigParser()
+    cfg = configparser.ConfigParser()
     configfiles = [os.path.join(homedir, '.config', 'kakrafoon'),
                    os.path.join(homedir, '.kakrafoon'),
                    '/etc/kakrafoon.conf']
@@ -129,7 +178,7 @@ if __name__ == '__main__':
     if args.config:
         try:
             f = open(args.config, 'r')
-            r = config.read_file(f)
+            r = cfg.read_file(f)
             used_config = args.config
         except:
             print('Bad configuration file')
@@ -138,14 +187,15 @@ if __name__ == '__main__':
         for cf in configfiles:
             try:
                 with open(cf, 'r') as f:
-                    r = config.read_file(f)
+                    r = cfg.read_file(f)
                     used_config = cf
                     break
             except:
                 pass
 
-    if config.has_section('kakrafoon'):
-        defaults = dict(config.items('kakrafoon'))
+    if cfg.has_section('kakrafoon'):
+        defaults = dict(cfg.items('kakrafoon'))
+        config = defaults
     else:
         defaults = {}
 
