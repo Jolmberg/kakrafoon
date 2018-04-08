@@ -208,7 +208,7 @@ if __name__ == '__main__':
                         help='skip current item')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
-    group1.add_argument('-v', '--volume', nargs='?', metavar='V',
+    group1.add_argument('-v', '--volume', nargs='?', metavar='V', action='append',
                         type=VolumeString,
                         help='get or set the volume - V is either volume, channel=volume,'
                         + ' mixer=volume, or mixer/channel=volume' )
