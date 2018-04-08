@@ -107,6 +107,10 @@ def print_volume(volume):
 class VolumeString(object):
     """Parses arguments passed with the volume flag"""
     def __init__(self, string):
+        self.relative = False
+        if string.endswith('+') or string.endswith('-'):
+            self.relative = string[-1]
+            string = string[:-1]
         if string.isnumeric():
             self.mixer = None
             self.channel = None
@@ -116,7 +120,7 @@ class VolumeString(object):
                 [lvalue, vol] = string.split('=')
                 if not vol.isnumeric():
                     raise TypeError('Bad volume string')
-                self.volume = vol
+                self.volume = int(vol)
                 if '/' not in lvalue:
                     if lvalue in ['front-left', 'front-right']:
                         self.mixer = None
@@ -132,6 +136,10 @@ class VolumeString(object):
                     raise TypeError('Bad volume string')
             else:
                 raise TypeError('Bad volume string')
+        if self.relative:
+            if self.relative == '-':
+                self.volume = -self.volume
+            self.relative = True
 
 
 class RemoveString(object):
@@ -211,7 +219,8 @@ if __name__ == '__main__':
     group1.add_argument('-v', '--volume', nargs='?', metavar='V', action='append',
                         type=VolumeString,
                         help='get or set the volume - V is either volume, channel=volume,'
-                        + ' mixer=volume, or mixer/channel=volume' )
+                        + ' mixer=volume, or mixer/channel=volume\nsuffix volume with'
+                        + ' + or - for relative changes')
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
     group1.add_argument('-q', '--queue', nargs='?', metavar='STYLE', action='append',
@@ -300,7 +309,7 @@ if __name__ == '__main__':
                             print_volume(volume)
                             volume_printed = True
                 else:
-                    client.set_volume(v.volume, channel=v.channel, mixer=v.mixer)
+                    client.set_volume(v.volume, channel=v.channel, mixer=v.mixer, relative=v.relative)
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:

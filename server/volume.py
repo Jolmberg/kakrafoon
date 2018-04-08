@@ -1,9 +1,15 @@
 import alsaaudio
+from collections import OrderedDict
 from config import dictionary as config
 
 _real_mixers = alsaaudio.mixers()
 allowed_mixers = [x for x in config['allowed_mixers'].split(',') if x in _real_mixers]
 default_mixer = config['default_mixer'] if config['default_mixer'] in allowed_mixers else None
+
+# The default mixer should always be the first one in the list
+if default_mixer and default_mixer in allowed_mixers and allowed_mixers[0] != default_mixer:
+    allowed_mixers.remove(default_mixer)
+    allowed_mixers.insert(0, default_mixer)
 
 channel_names = ['front-left','front-right']
 
@@ -14,7 +20,7 @@ class NoSuchChannelError(Exception):
     pass
 
 def get_all():
-    mixers = {}
+    mixers = OrderedDict()
     for name in allowed_mixers:
         try:
             m = alsaaudio.Mixer(name)

@@ -109,9 +109,40 @@ class Client(object):
         except requests.exceptions.ConnectionError as e:
             raise ConnectionError() from e
 
-    def set_volume(self, volume, channel=None, mixer=None):
+    def set_volume(self, volume, channel=None, mixer=None, relative=False):
         """Set volume"""
         try:
+            if relative:
+                current = self.get_volume()
+                current_mixer = None
+                current_channel = None
+                if mixer is None:
+                    current_mixer = current.mixers[0]
+                else:
+                    for m in current.mixers:
+                        if m.name == mixer:
+                            current_mixer = m
+                if current_mixer is None:
+                    return False
+                if channel is None:
+                    # Are all channels the same? If so we need only one request.
+                    if all(c.volume==current_mixer.channels[0].volume for c in current_mixer.channels):
+                        old_volume = current_mixer.channels[0].volume
+                        return self.set_volume(old_volume + volume, channel, mixer, False)
+                    else:
+                        for c in current_mixer.channels:
+                            old_volume = c.volume
+                            self.set_volume(old_volume + volume, c.name, mixer, False)
+                        return
+                else:
+                    for c in current_mixer.channels:
+                        if c.name == channel:
+                            current_channel = c
+                    if current_channel is None:
+                        return False
+                    old_volume = current_channel.volume
+                    return self.set_volume(old_volume + volume, channel, mixer, False)
+
             setrequest = kakmsg.volume.SetRequest(volume, channel, mixer)
             schema = kakmsg.volume.SetRequestSchema()
             json = schema.dumps(setrequest)
