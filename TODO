@@ -1,0 +1,15 @@
+Stuff to think about
+
+- nicer queue formatting, colours and stuff
+- man page
+- more documentation
+- packaging
+- init script
+- web ui
+- statistics database
+- persistent song storage
+- compressed file support (zip, tar, gzip, bzip2)
+- url support
+- support for youtube links etc
+- more backends
+- authentication and authorization
