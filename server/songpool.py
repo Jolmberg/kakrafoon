@@ -1,8 +1,11 @@
 import shutil
 import os
+from config import dictionary as config
+
+os.makedirs(config['song_pool_path'], exist_ok=True)
 
 def _save_song(item_id, song_id, fileobj):
-    path = os.path.join('/tmp/kakrafoon', str(item_id))
+    path = os.path.join(config['song_pool_path'], str(item_id))
     os.makedirs(path, exist_ok=True)
     filepath = os.path.join(path, str(song_id))
     fileobj.save(filepath)
@@ -38,7 +41,7 @@ class SongPool(object):
     def remove_item(self, item_id):
         """Removes an item and deletes its files"""
         if item_id in self.items:
-            shutil.rmtree(os.path.join('/tmp/kakrafoon', str(item_id)))
+            shutil.rmtree(os.path.join(config['song_pool_path'], str(item_id)))
             del self.items[item_id]
             return True
         else:
@@ -61,5 +64,5 @@ class SongPool(object):
             return False
         print(song)
         item.songs.remove(song)
-        os.remove(os.path.join('/tmp/kakrafoon', str(item_id), str(song_id)))
+        os.remove(os.path.join(config['song_pool_path'], str(item_id), str(song_id)))
         return True

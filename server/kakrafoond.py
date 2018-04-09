@@ -18,9 +18,6 @@ control = control.Control(kpool, kqueue)
 
 control.start()
 
-
-os.makedirs("/tmp/kakrafoon", exist_ok=True)
-
 def make_song(key, filename=None, url=None, enqueue_song=None):
     """Create a kakmsg.queue.Song object from whatever info is available"""
     song = kakmsg.queue.Song(key=key)

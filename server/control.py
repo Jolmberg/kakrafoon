@@ -2,6 +2,7 @@ import threading
 import os
 import stopwatch
 import kakraplay
+from config import dictionary as config
 
 def synchronised(f):
     """Synchronisation decorator"""
@@ -52,8 +53,7 @@ class Control(threading.Thread):
             self.songs = self.item.songs
         print(self.songs)
         self.song = self.songs[0]
-        realfilename = os.path.join('/tmp/kakrafoon', str(self.item.key), str(self.song.key))
-        print(realfilename)
+        realfilename = os.path.join(config['song_pool_path'], str(self.item.key), str(self.song.key))
         self.player = kakraplay.get_player(realfilename,
                                            subtune=self.song.subtune,
                                            loops=self.song.loops)
