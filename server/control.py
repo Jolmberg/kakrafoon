@@ -85,7 +85,11 @@ class Control(threading.Thread):
 
             self.playing = True
             self.stopwatch.start()
-            self.player.play()
+            try:
+                self.player.play()
+            except Exception as e:
+                # This is a disaster and should be logged
+                pass
             self.stopwatch.pause()
             self.playing = False
 
