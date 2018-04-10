@@ -1,6 +1,7 @@
+import signal
 import subprocess
 import threading
-import signal
+import time
 from collections import OrderedDict
 
 # File types that can be handled by this backend (python regexp format)
@@ -41,6 +42,8 @@ class Player(object):
 
     # These methods should be supported by a good backend.
     def pause(self):
+        if self.proc is None:
+            return False
         try:
             self.proc.send_signal(signal.SIGSTOP)
             return True
@@ -48,6 +51,8 @@ class Player(object):
             return False
 
     def resume(self):
+        if self.proc is None:
+            return False
         try:
             self.proc.send_signal(signal.SIGCONT)
             return True
@@ -55,9 +60,12 @@ class Player(object):
             return False
 
     def abort(self):
+        if self.proc is None:
+            return False
         try:
             self.proc.send_signal(signal.SIGCONT)
             self.proc.send_signal(signal.SIGTERM)
+            threading.Thread(target=sigkill, args=(self.proc,)).start()
             return True
         except:
             return False
@@ -65,3 +73,9 @@ class Player(object):
 
 def get_player(regexp, filename, subtune, loops):
     return Player(regexp, filename, subtune, loops)
+
+def sigkill(proc):
+    time.sleep(5)
+    if proc.poll() is None:
+        # This is not normal and should be logged
+        proc.send_signal(signal.SIGKILL)
