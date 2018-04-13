@@ -70,7 +70,7 @@ def get_player(filename, subtune=None, loops=0):
     else:
         raise NoBackendError(text)
     
-    return module.get_player(regexp, filename, subtune, loops)
+    return module.get_player(regexp, filename, subtune, loops, text)
 
 # TODO: Make path configurable (and also not relative to .)
 sys.path.append('./backends')

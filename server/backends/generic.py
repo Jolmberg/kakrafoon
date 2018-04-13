@@ -1,3 +1,4 @@
+import re
 import signal
 import subprocess
 import threading
@@ -15,14 +16,18 @@ regexps = OrderedDict([
 ])
 
 class Player(object):
-    def __init__(self, regexp, filename, subtune, loops):
+    def __init__(self, regexp, filename, subtune, loops, text):
         self.subtune = subtune
         self.loops = loops
         self.filename = filename
+        self.text = text
         self.proc = None
         self.stopped = False
 
         n, c, s, l = regexps[regexp]
+
+        self._is_loopable = l is not None
+        self._has_subtunes = s is not None
         self.name = n
         self.cmd = c[:]
         print(self.cmd)
@@ -70,9 +75,32 @@ class Player(object):
         except:
             return False
 
+    def is_loopable(self):
+        return self._is_loopable
 
-def get_player(regexp, filename, subtune, loops):
-    return Player(regexp, filename, subtune, loops)
+    def has_subtunes(self):
+        return self._has_subtunes
+
+    def get_subtune(self):
+        if not self._has_subtunes:
+            return None
+        if self.subtune:
+            return self.subtune
+
+        if self.name == 'sidplay2':
+            m = re.search('default song: (\\d)', self.text)
+            if m:
+                ds = m.groups()[0]
+                return int(ds)
+            else:
+                return 1
+
+        if self.name == 'nosefart':
+            return 1
+
+
+def get_player(regexp, filename, subtune, loops, text):
+    return Player(regexp, filename, subtune, loops, text)
 
 def sigkill(proc):
     time.sleep(5)
