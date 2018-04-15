@@ -98,6 +98,13 @@ class Player(object):
         if self.name == 'nosefart':
             return 1
 
+    def get_loops(self):
+        if not self._is_loopable:
+            return None
+        if not self.loops:
+            return 0
+        return self.loops
+
 
 def get_player(regexp, filename, subtune, loops, text):
     return Player(regexp, filename, subtune, loops, text)
