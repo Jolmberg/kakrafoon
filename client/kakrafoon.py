@@ -223,7 +223,7 @@ if __name__ == '__main__':
                         + ' + or - for relative changes')
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
-    group1.add_argument('-q', '--queue', nargs='?', metavar='STYLE', action='append',
+    group1.add_argument('-q', '--queue', type=str, nargs='?', metavar='STYLE', const='',
                         help='show the current queue - STYLE can be simple, simple_long'
                         + ' or fancy (default)')
     group1.add_argument('-r', '--remove', nargs=1, metavar='ID', action='append',
@@ -251,8 +251,13 @@ if __name__ == '__main__':
             print('Using configuration file: ' + used_config)
 
     try:
-        if args.queue:
-            style = args.queue[-1]
+        if args.queue is not None:
+            style = args.queue
+            if style == '':
+                if 'queue' in defaults:
+                    style = defaults['queue']
+                else:
+                    style = None
             queue = client.get_queue()
             if queue:
                 print_queue(queue, style)
