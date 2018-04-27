@@ -5,6 +5,7 @@ import kakmsg.enqueue
 import kakmsg.queue
 import kakmsg.volume
 import kakmsg.error
+import kakmsg.stats
 import kakqueue
 import songpool
 import control
@@ -189,6 +190,26 @@ def volume_set():
         except:
             return make_error(500, 2002, 'Unknown mixer error.')
         return ''
+
+@app.route('/stats/song/<songid>', methods=['GET'])
+def stats_song_get(songid):
+    song = kstats.get_song_by_id(songid)
+    if song is None:
+        return make_error(404, 3000, 'Song not found')
+    s = kakmsg.stats.Song(*song)
+    schema = kakmsg.stats.SongSchema()
+    json = schema.dumps(s)
+    return json.data
+
+@app.route('/stats/user/<userid>', methods=['GET'])
+def stats_user_get(userid):
+    user = kstats.get_user_by_id(userid)
+    if user is None:
+        return make_error(404, 3000, 'User not found')
+    s = kakmsg.stats.User(*user)
+    schema = kakmsg.stats.UserSchema()
+    json = schema.dumps(s)
+    return json.data
 
 
 if __name__ == '__main__':

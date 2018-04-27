@@ -104,6 +104,30 @@ class Stats(object):
         self._song_cache[(songhash, subtune)] = (songid, name, length, None)
         return songid
 
+    def get_song_by_id(self, songid):
+        con = self.get_connection()
+        with(closing(con.cursor())) as cur:
+             try:
+                 cur.execute('select id, songname, subtune, length, looplength, plays, playtime from songs where id=?', (songid,))
+                 r = cur.fetchall()
+                 if len(r) == 0:
+                     return None
+                 return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4], r[0][5], r[0][6])
+             except Exception as e:
+                 raise e
+
+    def get_user_by_id(self, userid):
+        con = self.get_connection()
+        with(closing(con.cursor())) as cur:
+             try:
+                 cur.execute('select id, username, plays, playtime from users where id=?', (userid,))
+                 r = cur.fetchall()
+                 if len(r) == 0:
+                     return None
+                 return (r[0][0], r[0][1], r[0][2], r[0][3])
+             except Exception as e:
+                 raise e
+
     def get_song(self, songhash, subtune=None):
         if subtune is None:
             subtune = -1
