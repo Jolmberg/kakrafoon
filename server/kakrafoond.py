@@ -181,7 +181,7 @@ def volume_set():
         try:
             volume.set(r.volume, r.channel, r.mixer)
         except volume.NoSuchMixerError:
-            return make_error(400, 2000, 'Nu such mixer.')
+            return make_error(400, 2000, 'No such mixer.')
         except volume.NoSuchChannelError:
             return make_error(400, 2001, 'No such channel.')
         except:
