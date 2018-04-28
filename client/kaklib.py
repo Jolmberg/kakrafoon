@@ -61,10 +61,12 @@ class Client(object):
         if r.status_code != 200:
             raise_response_error(r)
 
-    def get_queue(self):
+    def get_queue(self, json=False):
         """Retrieve the current queue"""
         try:
             r = requests.get(self.server_url+ '/queue')
+            if json:
+                return r.text
             schema = kakmsg.queue.QueueSchema()
             q = schema.loads(r.text).data
             return q

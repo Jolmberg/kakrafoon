@@ -224,8 +224,8 @@ if __name__ == '__main__':
     group1.add_argument('-p', '--pause', action='store_true',
                        help='pause playback')
     group1.add_argument('-q', '--queue', type=str, nargs='?', metavar='STYLE', const='',
-                        help='show the current queue - STYLE can be simple, simple_long'
-                        + ' or fancy (default)')
+                        help='show the current queue - STYLE can be simple, simple_long,'
+                        + ' json, or fancy (default)')
     group1.add_argument('-r', '--remove', nargs=1, metavar='ID', action='append',
                         type=RemoveString,
                         help='remove entry ID from the queue')
@@ -258,9 +258,10 @@ if __name__ == '__main__':
                     style = defaults['queue']
                 else:
                     style = None
-            queue = client.get_queue()
-            if queue:
-                print_queue(queue, style)
+            if style == 'json':
+                print(client.get_queue(json=True))
+            else:
+                print_queue(client.get_queue(), style)
         elif args.pause:
             client.pause()
         elif args.resume:
