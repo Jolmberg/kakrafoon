@@ -10,8 +10,8 @@ regexps = OrderedDict([
     ('.*PlaySID.*', ('sidplay2', ['sidplay2', '-os'], '-o$s', None)),
     ('.*NES Sound File.*', ('nosefart', ['nosefart', '-l 1200', '-a 2'], '-t $s', '-a $l')),
     ('.*(Fastt|ScreamT|Impulse T|Prot)racker.*', ('mikmod', ['mikmod', '-hq', '-q'], None, None)),
-    ('.*MPEG.*', ('mplayer', ['mplayer', '-vo=null'], None, None)),
-    ('.*', ('mplayer', ['mplayer', '-vo=null'], None, None))
+    ('.*MPEG.*', ('mplayer', ['mplayer', '-vo', 'null'], None, None)),
+    ('.*', ('mplayer', ['mplayer', '-vo', 'null'], None, None))
 ])
 
 class Player(object):
