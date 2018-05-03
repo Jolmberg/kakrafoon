@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import kakmsg.enqueue
 import kakmsg.queue
@@ -41,8 +42,8 @@ def make_song(key, filename=None, url=None, enqueue_song=None):
 def make_error(http_code, error_code, msg):
     err = kakmsg.error.Error(error_code, msg)
     schema = kakmsg.error.ErrorSchema()
-    json = schema.dumps(err)
-    return (json.data, http_code, { 'Content-Type' : 'application/json' })
+    j = schema.dumps(err)
+    return (j.data, http_code, { 'Content-Type' : 'application/json' })
 
 
 @app.route('/queue', methods=['POST'])
@@ -117,8 +118,8 @@ def queue_show():
     q = kakmsg.queue.Queue([kpool.get_item(x) for x in kqueue.get_all()],
                            playing, current_song, current_song_time)
     schema = kakmsg.queue.QueueSchema()
-    json = schema.dumps(q)
-    return json.data
+    j = schema.dumps(q)
+    return j.data
 
 @app.route('/queue/<item_id>', methods=['DELETE'])
 def queue_delete_item(item_id):
@@ -173,8 +174,8 @@ def volume_get():
                                                          for (name, x) in channels.items()])
                               for (name, channels) in vol.items()])
     schema = kakmsg.volume.VolumeSchema()
-    json = schema.dumps(v)
-    return json.data
+    j = schema.dumps(v)
+    return j.data
 
 @app.route('/volume', methods=['POST'])
 def volume_set():
@@ -191,26 +192,89 @@ def volume_set():
             return make_error(500, 2002, 'Unknown mixer error.')
         return ''
 
-@app.route('/stats/song/<songid>', methods=['GET'])
-def stats_song_get(songid):
-    song = kstats.get_song_by_id(songid)
+@app.route('/stats/songs/<songid>', methods=['GET'])
+def stats_song(songid):
+    song = kstats.get_song_by_column('id', songid)
     if song is None:
         return make_error(404, 3000, 'Song not found')
     s = kakmsg.stats.Song(*song)
     schema = kakmsg.stats.SongSchema()
-    json = schema.dumps(s)
-    return json.data
+    j = schema.dumps(s)
+    return j.data
 
-@app.route('/stats/user/<userid>', methods=['GET'])
-def stats_user_get(userid):
-    user = kstats.get_user_by_id(userid)
+@app.route('/stats/songs/<songid>/users_by_plays', methods=['GET'])
+def stats_song_users_by_plays(songid):
+    dbsongs = kstats.metric_usersongs_thing_by_value('user', 'plays', int(songid))
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/songs/<songid>/users_by_playtime', methods=['GET'])
+def stats_song_users_by_playtime(songid):
+    dbsongs = kstats.metric_usersongs_thing_by_value('user', 'playtime', int(songid))
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/users/<userid>', methods=['GET'])
+def stats_users_by_id(userid):
+    user = kstats.get_user_by_column('id', userid)
     if user is None:
-        return make_error(404, 3000, 'User not found')
+        return make_error(404, 3001, 'No such user')
     s = kakmsg.stats.User(*user)
     schema = kakmsg.stats.UserSchema()
-    json = schema.dumps(s)
-    return json.data
+    j = schema.dumps(s)
+    return j.data
 
+@app.route('/stats/users', methods=['GET'])
+def stats_users():
+    if 'username' in request.args:
+        username = request.args['username']
+        if username is not None:
+            user = kstats.get_user_by_column('username', username)
+            if user is None:
+                return make_error(400, 3002, 'User not found')
+        s = kakmsg.stats.User(*user)
+        schema = kakmsg.stats.UserSchema()
+        j = schema.dumps(s)
+        return j.data
+    return make_error(400, 3003, 'Bad request')
+
+@app.route('/stats/users/<userid>/songs_by_plays', methods=['GET'])
+def stats_user_songs_by_plays(userid):
+    dbsongs = kstats.metric_usersongs_thing_by_value('song', 'plays', int(userid))
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/users/<userid>/songs_by_playtime', methods=['GET'])
+def stats_user_songs_by_playtime(userid):
+    dbsongs = kstats.metric_usersongs_thing_by_value('song', 'playtime', int(userid))
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/songs_by_plays', methods=['GET'])
+def stats_songs_by_plays():
+    dbsongs = kstats.metric_thing_by_value('song', 'plays')
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/songs_by_playtime', methods=['GET'])
+def stats_songs_by_playtime():
+    dbsongs = kstats.metric_thing_by_value('song', 'playtime')
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/songs_by_players', methods=['GET'])
+def stats_songs_by_players():
+    dbsongs = kstats.metric_usersongs_thing_by_unique_value('song', 'players')
+    return json.dumps([dict(x) for x in dbsongs])
+
+@app.route('/stats/users_by_plays', methods=['GET'])
+def stats_users_by_plays():
+    dbusers = kstats.metric_thing_by_value('user', 'plays')
+    return json.dumps([dict(x) for x in dbusers])
+
+@app.route('/stats/users_by_playtime', methods=['GET'])
+def stats_users_by_playtime():
+    dbusers = kstats.metric_thing_by_value('user', 'playtime')
+    return json.dumps([dict(x) for x in dbusers])
+
+@app.route('/stats/users_by_songs', methods=['GET'])
+def stats_users_by_songs():
+    dbusers = kstats.metric_usersongs_thing_by_unique_value('user', 'songs')
+    return json.dumps([dict(x) for x in dbusers])
 
 if __name__ == '__main__':
     app.debug=True

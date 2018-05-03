@@ -10,15 +10,27 @@ CREATE = [
     "CREATE TABLE IF NOT EXISTS usersongs (id INTEGER PRIMARY KEY, userid INTEGER REFERENCES users(id), songid INTEGER REFERENCES songs(id), plays INTEGER, playtime INTEGER)",
     "CREATE TABLE IF NOT EXISTS loops (songid INTEGER PRIMARY KEY REFERENCES songs(id), loops INTEGER, length INTEGER)",
     "CREATE TABLE IF NOT EXISTS playing (id INTEGER PRIMARY KEY, username TEXT, songname TEXT, starttime INTEGER, hash TEXT)",
+    "CREATE TABLE IF NOT EXISTS kakrafoon (id INTEGER PRIMARY KEY, key TEXT, value TEXT)",
     "CREATE INDEX IF NOT EXISTS log_userid ON log(userid)",
     "CREATE INDEX IF NOT EXISTS log_songid ON log(songid)",
     "CREATE INDEX IF NOT EXISTS users_username ON users(username)",
+    "CREATE INDEX IF NOT EXISTS users_plays ON users(plays)",
+    "CREATE INDEX IF NOT EXISTS users_playtime ON users(playtime)",
     "CREATE INDEX IF NOT EXISTS songs_hash ON songs(hash)",
     "CREATE INDEX IF NOT EXISTS songs_songname ON songs(songname)",
+    "CREATE INDEX IF NOT EXISTS songs_plays ON songs(plays)",
+    "CREATE INDEX IF NOT EXISTS songs_playtime ON songs(playtime)",
     "CREATE INDEX IF NOT EXISTS usersongs_userid ON usersongs(userid)",
     "CREATE INDEX IF NOT EXISTS usersongs_songid ON usersongs(songid)",
+    "CREATE INDEX IF NOT EXISTS usersongs_plays ON usersongs(plays)",
+    "CREATE INDEX IF NOT EXISTS usersongs_playtime ON usersongs(playtime)",
     "CREATE INDEX IF NOT EXISTS loops_ssongid ON loops(songid)",
     ]
+
+VERSION = 1
+
+class StatsError(Exception):
+    pass
 
 class Stats(object):
     def __init__(self):
@@ -30,11 +42,32 @@ class Stats(object):
         self.create()
 
     def create(self):
+        version = None
         con = self.get_connection()
         with closing(con.cursor()) as cur:
-            for c in CREATE:
-                cur.execute(c)
+            cur.execute("select * from sqlite_master where type='table' and name='kakrafoon'")
+            r = cur.fetchall()
+            if len(r) != 1:
+                for c in CREATE:
+                    cur.execute(c)
+                    #con.commit()
+                cur.execute("insert into kakrafoon(key, value) values('version', ?)",
+                                (str(VERSION),))
+                version = VERSION
+            else:
+                cur.execute("select value from kakrafoon where key='version'")
+                r = cur.fetchall()
+                version = int(r[0][0])
         con.commit()
+
+        if version < VERSION:
+            self.upgrade(version)
+        elif version > VERSION:
+            raise StatsError('Database version (%d) is from the future' % (version,))
+
+    def upgrade(self, from_version):
+        # Add code to upgrade the any older database schema to the current version here
+        raise StatsError('Cannot upgrade from this database version (%d)' % (from_version,))
 
     def get_connection(self):
         thread_id = threading.get_ident()
@@ -48,7 +81,7 @@ class Stats(object):
         con = self.get_connection()
         with closing(con.cursor()) as cur:
             try:
-                cur.execute('insert into users (username, plays, playtime) values (?,?,?)',
+                cur.execute('insert into users(username, plays, playtime) values(?,?,?)',
                             (name, 0, 0))
                 userid = cur.lastrowid
             except Exception as e:
@@ -57,24 +90,29 @@ class Stats(object):
         self._user_cache[name] = userid
         return userid
 
-    def get_user(self, name):
+    def fetch_all(self, query, params=(), cur=None):
+        if not cur:
+            con = self.get_connection()
+            con.row_factory = sqlite3.Row
+            with closing(con.cursor()) as cur:
+                cur.execute(query, params)
+                return cur.fetchall()
+        else:
+            cur.execute(query, params)
+            return cur.fetchall()
+
+    def get_user_by_name(self, name):
         if name in self._user_cache:
             return self._user_cache[name]
 
-        con = self.get_connection()
-        with closing(con.cursor()) as cur:
-            try:
-                cur.execute('select id from users where username=?', (name,))
-                r = cur.fetchall()
-                if len(r) == 0:
-                    return None
-                self._user_cache[name] = r[0][0]
-                return r[0][0]
-            except Exception as e:
-                raise e
+        r = self.fetch_all('select id from users where username=?', (name,))
+        if len(r) == 0:
+            return None
+        self._user_cache[name] = r[0][0]
+        return r[0][0]
 
     def get_or_add_user(self, name):
-        userid = self.get_user(name)
+        userid = self.get_user_by_name(name)
         if userid is not None:
             return userid
         return self.add_user(name)
@@ -104,31 +142,19 @@ class Stats(object):
         self._song_cache[(songhash, subtune)] = (songid, name, length, None)
         return songid
 
-    def get_song_by_id(self, songid):
-        con = self.get_connection()
-        with(closing(con.cursor())) as cur:
-             try:
-                 cur.execute('select id, songname, subtune, length, looplength, plays, playtime from songs where id=?', (songid,))
-                 r = cur.fetchall()
-                 if len(r) == 0:
-                     return None
-                 return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4], r[0][5], r[0][6])
-             except Exception as e:
-                 raise e
+    def get_song_by_column(self, column, value):
+        r = self.fetch_all('select id, songname, subtune, length, looplength, plays, playtime from songs where %s=?' % (column,), (value,))
+        if len(r) == 0:
+            return None
+        return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4], r[0][5], r[0][6])
 
-    def get_user_by_id(self, userid):
-        con = self.get_connection()
-        with(closing(con.cursor())) as cur:
-             try:
-                 cur.execute('select id, username, plays, playtime from users where id=?', (userid,))
-                 r = cur.fetchall()
-                 if len(r) == 0:
-                     return None
-                 return (r[0][0], r[0][1], r[0][2], r[0][3])
-             except Exception as e:
-                 raise e
+    def get_user_by_column(self, column, value):
+        r = self.fetch_all('select id, username, plays, playtime from users where %s=?' % (column,), (value,))
+        if len(r) == 0:
+            return None
+        return (r[0][0], r[0][1], r[0][2], r[0][3])
 
-    def get_song(self, songhash, subtune=None):
+    def get_song_by_hash_and_subtune(self, songhash, subtune=None):
         if subtune is None:
             subtune = -1
         if (songhash, subtune) in self._song_cache:
@@ -137,21 +163,16 @@ class Stats(object):
         # TODO: Should the song cache size be limited somehow?
         print("Song is not cached: " + str((songhash, subtune)))
         con = self.get_connection()
-        with closing(con.cursor()) as cur:
-            try:
-                cur.execute('select id, songname, length, looplength from songs where hash=? and subtune=?',
+        r = self.fetch_all('select id, songname, length, looplength from songs where hash=? and subtune=?',
                             (songhash, subtune))
-                r = cur.fetchall()
-                if len(r) == 0:
-                    return None
-                result = (r[0][0], r[0][1], r[0][2], r[0][3])
-                self._song_cache[(songhash, subtune)] = result
-                return result
-            except Exception as e:
-                raise e
+        if len(r) == 0:
+            return None
+        result = (r[0][0], r[0][1], r[0][2], r[0][3])
+        self._song_cache[(songhash, subtune)] = result
+        return result
 
     def get_or_add_song(self, name, songhash, subtune=None, length=None, loops=None):
-        song = self.get_song(songhash, subtune)
+        song = self.get_song_by_hash_and_subtune(songhash, subtune)
         if song is not None:
             if song[3] is None and loops is not None:
                 self._calculate_loops(song[0], loops, length)
@@ -192,17 +213,11 @@ class Stats(object):
         if (userid, songid) in self._usersong_cache:
             return self._usersong_cache[(userid, songid)]
 
-        con = self.get_connection()
-        with closing(con.cursor()) as cur:
-            try:
-                cur.execute('select id from usersongs where userid=? and songid=?', (userid, songid))
-                r = cur.fetchall()
-                if len(r) == 0:
-                    return None
-                self._usersong_cache[(userid, songid)] = r[0][0]
-                return r[0][0]
-            except Exception as e:
-                raise e
+        r = self.fetch_all('select id from usersongs where userid=? and songid=?', (userid, songid))
+        if len(r) == 0:
+            return None
+        self._usersong_cache[(userid, songid)] = r[0][0]
+        return r[0][0]
 
     def log_song(self, username, songname, songhash, subtune, loops, starttime, duration, aborted):
         starttime = round(starttime)
@@ -231,3 +246,13 @@ class Stats(object):
             except Exception as e:
                 raise e
         con.commit()
+
+    def metric_thing_by_value(self, thing, value, limit=10, offset=0, ascending=False):
+        return self.fetch_all('select id as {0}id, {0}name, {1} from {0}s order by {1} {2} limit ? offset ?'.format(thing, value, 'asc' if ascending else 'desc'), (limit, offset))
+
+    def metric_usersongs_thing_by_value(self, thing, value, id, limit=10, offset=0, ascending=False):
+        idthing = 'song' if thing == 'user' else 'user'
+        return self.fetch_all('select i.id as {0}id, i.{0}name, us.{2} from usersongs us inner join {0}s i on us.{0}id = i.id where us.{1}id=? order by us.{2} {3} limit ? offset ?'.format(thing, idthing, value, 'asc' if ascending else 'desc'), (id, limit, offset))
+
+    def metric_usersongs_thing_by_unique_value(self, thing, number, limit=10, offset=0, ascending=False):
+        return self.fetch_all('select i.id as {0}id, i.{0}name, count(*) as {1} from usersongs us inner join {0}s i on us.{0}id = i.id group by 1,2 order by 3 {2} limit ? offset ?'.format(thing, number, 'asc' if ascending else 'desc'), (limit, offset))
