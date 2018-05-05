@@ -369,15 +369,45 @@ if __name__ == '__main__':
                 else:
                     client.set_volume(v.volume, channel=v.channel, mixer=v.mixer, relative=v.relative)
         elif args.highscore is not None:
-            print(args.highscore)
             args = args.highscore[-1]
             if args == ['help']:
-                print('Du torde vara ful och dum!')
-            elif args == ['songs_by_plays']:
-                print_table([('songname',1,'l'), ('plays',-1,'r')], ['songname'], client.stats_songs_by_plays())
+                print("""Format: METRIC [user U] [song S] [limit N] [reverse]
+ METRIC is one of songs_by_plays, songs_by_playtime, songs_by_users,
+ users_by_plays, users_by_playtime, users_by_songs.
+ Results can optionally be filtered to a single user or song.
+ User can be given as user id or username. Song must always be song id.
+ Examples:
+  To list the five least played songs:
+   "songs_by_plays limit 5 reverse"
+  To list the ten users who have spent the most time playing song 1:
+   "users_by_playtime song 1 limit 10""")
+            else:
+                metric = args[0]
+                kwargs = {}
+                args.pop(0)
+                while args:
+                    if args[0] == 'reverse':
+                        kwargs['reverse'] = True
+                    else:
+                        kwargs[args[0]] = args[1]
+                        args.pop(0)
+                    args.pop(0)
+                if 'limit' in kwargs:
+                    kwargs['limit'] = int(kwargs['limit'])
+
+                data = client.stats(metric, **kwargs)
+                variable_column = metric.split('_')[-1]
+                songoruser = metric.split('_')[0][:-1] + 'name'
+                print_table([(songoruser,1,'l'), (variable_column,-1,'r')], [songoruser], data)
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:
         print(e.message)
     except kaklib.ConnectionError as e:
         print("Connection failed, server %s, user %s"%(client.server_url, client.username))
+
+# stats_columns = { 'songs_by_plays' : ([('songname',1,'l'), ('plays',-1,'r')], ['songname']),
+#                   'songs_by_playtime' : ([('songname',1,'l'), ('playtime',-1,'r')], ['songname']),
+#                   'songs_by_players' : ([('songname',1,'l'), ('players',-1,'r')], ['songname']),
+#                   'users_by_plays' : ([('username',1,'l'), ('plays',-1,'r')], ['username']),
+#                   'users_by_playtime' : ([('username',1,'l'), ('playtime',-1,'r')], ['username']                  'users_by_songs' : ([('username',1,'l'), ('songs',-1,'r')], ['username']),

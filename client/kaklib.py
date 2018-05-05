@@ -6,9 +6,9 @@ import requests
 import kakmsg.enqueue
 import kakmsg.error
 import kakmsg.queue
+import kakmsg.stats
 import kakmsg.volume
 import werkzeug
-
 
 class ErrorResponse(Exception):
     def __init__(self, message, error_code):
@@ -156,4 +156,30 @@ class Client(object):
 
     def stats_songs_by_plays(self, limit=10):
         r = requests.get(self.server_url + '/stats/songs_by_plays')
+        return json.loads(r.text)
+
+    def stats(self, metric, user=None, song=None, limit=None, reverse=False):
+        url = None
+        if user is not None:
+            userid = str(user)
+            if not userid.isnumeric():
+                r = requests.get(self.server_url + '/stats/users?username=' + user)
+                schema = kakmsg.stats.UserSchema()
+                u = schema.loads(r.text).data
+                print(r.text)
+                userid = str(u.id)
+            url = '/stats/users/%s/' % (userid)
+        elif song is not None:
+            url = '/stats/songs/%s/' % (song)
+        else:
+            url = '/stats/'
+        url += metric
+        vars = []
+        if type(limit) is int and limit > 0:
+            vars.append('limit=%d' % (limit,))
+        if reverse:
+            vars.append('reverse=true')
+        if vars:
+            url += '?' + '&'.join(vars)
+        r = requests.get(self.server_url + url)
         return json.loads(r.text)

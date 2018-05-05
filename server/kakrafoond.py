@@ -202,16 +202,6 @@ def stats_song(songid):
     j = schema.dumps(s)
     return j.data
 
-@app.route('/stats/songs/<songid>/users_by_plays', methods=['GET'])
-def stats_song_users_by_plays(songid):
-    dbsongs = kstats.metric_usersongs_thing_by_value('user', 'plays', int(songid))
-    return json.dumps([dict(x) for x in dbsongs])
-
-@app.route('/stats/songs/<songid>/users_by_playtime', methods=['GET'])
-def stats_song_users_by_playtime(songid):
-    dbsongs = kstats.metric_usersongs_thing_by_value('user', 'playtime', int(songid))
-    return json.dumps([dict(x) for x in dbsongs])
-
 @app.route('/stats/users/<userid>', methods=['GET'])
 def stats_users_by_id(userid):
     user = kstats.get_user_by_column('id', userid)
@@ -236,45 +226,61 @@ def stats_users():
         return j.data
     return make_error(400, 3003, 'Bad request')
 
+def get_limit_and_reverse():
+    r = {}
+    if 'limit' in request.args:
+        limit = request.args['limit']
+        if limit.isnumeric() and int(limit) > 0:
+            r['limit'] = limit
+    if request.args.get('reverse', 'false') == 'true':
+        r['ascending'] = True
+    return r
+
+def metric(method, args):
+    kwargs = get_limit_and_reverse()
+    print(kwargs)
+    stuff = method(*args, **kwargs)
+    return json.dumps([dict(x) for x in stuff])
+
+@app.route('/stats/songs/<songid>/users_by_plays', methods=['GET'])
+def stats_song_users_by_plays(songid):
+    return metric(kstats.metric_usersongs_thing_by_value, ('user', 'plays', int(songid)))
+
+@app.route('/stats/songs/<songid>/users_by_playtime', methods=['GET'])
+def stats_song_users_by_playtime(songid):
+    return metric(kstats.metric_usersongs_thing_by_value, ('user', 'playtime', int(songid)))
+
 @app.route('/stats/users/<userid>/songs_by_plays', methods=['GET'])
 def stats_user_songs_by_plays(userid):
-    dbsongs = kstats.metric_usersongs_thing_by_value('song', 'plays', int(userid))
-    return json.dumps([dict(x) for x in dbsongs])
+    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'plays', int(userid)))
 
 @app.route('/stats/users/<userid>/songs_by_playtime', methods=['GET'])
 def stats_user_songs_by_playtime(userid):
-    dbsongs = kstats.metric_usersongs_thing_by_value('song', 'playtime', int(userid))
-    return json.dumps([dict(x) for x in dbsongs])
+    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'playtime', int(userid)))
 
 @app.route('/stats/songs_by_plays', methods=['GET'])
 def stats_songs_by_plays():
-    dbsongs = kstats.metric_thing_by_value('song', 'plays')
-    return json.dumps([dict(x) for x in dbsongs])
+    return metric(kstats.metric_thing_by_value,('song', 'plays'))
 
 @app.route('/stats/songs_by_playtime', methods=['GET'])
 def stats_songs_by_playtime():
-    dbsongs = kstats.metric_thing_by_value('song', 'playtime')
-    return json.dumps([dict(x) for x in dbsongs])
+    return metric(kstats.metric_thing_by_value,('song', 'playtime'))
 
-@app.route('/stats/songs_by_players', methods=['GET'])
+@app.route('/stats/songs_by_users', methods=['GET'])
 def stats_songs_by_players():
-    dbsongs = kstats.metric_usersongs_thing_by_unique_value('song', 'players')
-    return json.dumps([dict(x) for x in dbsongs])
+    return metric(kstats.metric_usersongs_thing_by_unique_value,('song', 'users'))
 
 @app.route('/stats/users_by_plays', methods=['GET'])
 def stats_users_by_plays():
-    dbusers = kstats.metric_thing_by_value('user', 'plays')
-    return json.dumps([dict(x) for x in dbusers])
+    return metric(kstats.metric_thing_by_value,('user', 'plays'))
 
 @app.route('/stats/users_by_playtime', methods=['GET'])
 def stats_users_by_playtime():
-    dbusers = kstats.metric_thing_by_value('user', 'playtime')
-    return json.dumps([dict(x) for x in dbusers])
+    return metric(kstats.metric_thing_by_value,('user', 'playtime'))
 
 @app.route('/stats/users_by_songs', methods=['GET'])
 def stats_users_by_songs():
-    dbusers = kstats.metric_usersongs_thing_by_unique_value('user', 'songs')
-    return json.dumps([dict(x) for x in dbusers])
+    return metric(kstats.metric_usersongs_thing_by_unique_value,('user', 'songs'))
 
 if __name__ == '__main__':
     app.debug=True

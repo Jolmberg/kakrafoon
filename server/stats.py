@@ -243,7 +243,7 @@ class Stats(object):
                 cur.execute('update users set plays=plays+1, playtime=playtime+?%s where id=?' % (skipstr,),
                             (duration, userid))
                 if usersongid is None:
-                    cur.execute('insert into usersongs (userid, songid, plays, playtime, skips) values(?,?,?,?)',
+                    cur.execute('insert into usersongs (userid, songid, plays, playtime, skips) values(?,?,?,?,?)',
                                 (userid, songid, 1, duration, 1 if aborted else 0))
                 else:
                     cur.execute('update usersongs set plays=plays+1, playtime=playtime+?%s where userid=? and songid=?' % (skipstr,),
@@ -256,6 +256,7 @@ class Stats(object):
         return self.fetch_all('select id as {0}id, {0}name, {1} from {0}s order by {1} {2} limit ? offset ?'.format(thing, value, 'asc' if ascending else 'desc'), (limit, offset))
 
     def metric_usersongs_thing_by_value(self, thing, value, id, limit=10, offset=0, ascending=False):
+        print('bulk')
         idthing = 'song' if thing == 'user' else 'user'
         return self.fetch_all('select i.id as {0}id, i.{0}name, us.{2} from usersongs us inner join {0}s i on us.{0}id = i.id where us.{1}id=? order by us.{2} {3} limit ? offset ?'.format(thing, idthing, value, 'asc' if ascending else 'desc'), (id, limit, offset))
 

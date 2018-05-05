@@ -2,7 +2,7 @@ from marshmallow import Schema, fields
 import marshmallow
 
 class Song(object):
-    def __init__(self, id=None, name=None, subtune=None, length=None, looplength=None, plays=None, playtime=None):
+    def __init__(self, id=None, name=None, subtune=None, length=None, looplength=None, plays=None, playtime=None, skips=None):
         self.id = id
         self.name = name
         self.subtune = subtune
@@ -10,13 +10,15 @@ class Song(object):
         self.looplength = looplength
         self.plays = plays
         self.playtime = playtime
+        self.skips = skips
 
 class User(object):
-    def __init__(self, id=None, name=None, plays=None, playtime=None):
+    def __init__(self, id=None, name=None, plays=None, playtime=None, skips=None):
         self.id = id
         self.name = name
         self.plays = plays
         self.playtime = playtime
+        self.skips = skips
 
 
 class SongSchema(Schema):
@@ -27,6 +29,7 @@ class SongSchema(Schema):
     looplength = fields.Int(missing=None)
     plays = fields.Int(missing=None)
     playtime = fields.Int(missing=None)
+    skips = fields.Int(missing=None)
 
     @marshmallow.post_load
     def make_song(self, data):
@@ -37,6 +40,7 @@ class UserSchema(Schema):
     name = fields.Str(missing=None)
     plays = fields.Int(missing=None)
     playtime = fields.Int(missing=None)
+    skips = fields.Int(missing=None)
 
     @marshmallow.post_load
     def make_User(self, data):
