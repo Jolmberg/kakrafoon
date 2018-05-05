@@ -4,10 +4,10 @@ from config import dictionary as config
 from contextlib import closing
 
 CREATE = [
-    "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, plays INTEGER, playtime INTEGER)",
-    "CREATE TABLE IF NOT EXISTS songs (id INTEGER PRIMARY KEY, songname TEXT, hash TEXT, subtune INTEGER, length INTEGER, looplength INTEGER, plays INTEGER, playtime INTEGER, UNIQUE(hash, subtune))",
-    "CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY, userid INTEGER REFERENCES users(id), songid INTEGER REFERENCES songs(id), timestamp INTEGER, duration INTEGER)",
-    "CREATE TABLE IF NOT EXISTS usersongs (id INTEGER PRIMARY KEY, userid INTEGER REFERENCES users(id), songid INTEGER REFERENCES songs(id), plays INTEGER, playtime INTEGER)",
+    "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT UNIQUE, plays INTEGER, playtime INTEGER, skips INTEGER)",
+    "CREATE TABLE IF NOT EXISTS songs (id INTEGER PRIMARY KEY, songname TEXT, hash TEXT, subtune INTEGER, length INTEGER, looplength INTEGER, plays INTEGER, playtime INTEGER, skips INTEGER, UNIQUE(hash, subtune))",
+    "CREATE TABLE IF NOT EXISTS log (id INTEGER PRIMARY KEY, userid INTEGER REFERENCES users(id), songid INTEGER REFERENCES songs(id), timestamp INTEGER, duration INTEGER, skipped INTEGER)",
+    "CREATE TABLE IF NOT EXISTS usersongs (id INTEGER PRIMARY KEY, userid INTEGER REFERENCES users(id), songid INTEGER REFERENCES songs(id), plays INTEGER, playtime INTEGER, skips INTEGER)",
     "CREATE TABLE IF NOT EXISTS loops (songid INTEGER PRIMARY KEY REFERENCES songs(id), loops INTEGER, length INTEGER)",
     "CREATE TABLE IF NOT EXISTS playing (id INTEGER PRIMARY KEY, username TEXT, songname TEXT, starttime INTEGER, hash TEXT)",
     "CREATE TABLE IF NOT EXISTS kakrafoon (id INTEGER PRIMARY KEY, key TEXT, value TEXT)",
@@ -16,14 +16,17 @@ CREATE = [
     "CREATE INDEX IF NOT EXISTS users_username ON users(username)",
     "CREATE INDEX IF NOT EXISTS users_plays ON users(plays)",
     "CREATE INDEX IF NOT EXISTS users_playtime ON users(playtime)",
+    "CREATE INDEX IF NOT EXISTS users_skips ON users(skips)",
     "CREATE INDEX IF NOT EXISTS songs_hash ON songs(hash)",
     "CREATE INDEX IF NOT EXISTS songs_songname ON songs(songname)",
     "CREATE INDEX IF NOT EXISTS songs_plays ON songs(plays)",
     "CREATE INDEX IF NOT EXISTS songs_playtime ON songs(playtime)",
+    "CREATE INDEX IF NOT EXISTS songs_skips ON songs(skips)",
     "CREATE INDEX IF NOT EXISTS usersongs_userid ON usersongs(userid)",
     "CREATE INDEX IF NOT EXISTS usersongs_songid ON usersongs(songid)",
     "CREATE INDEX IF NOT EXISTS usersongs_plays ON usersongs(plays)",
     "CREATE INDEX IF NOT EXISTS usersongs_playtime ON usersongs(playtime)",
+    "CREATE INDEX IF NOT EXISTS usersongs_skips ON usersongs(skips)",
     "CREATE INDEX IF NOT EXISTS loops_ssongid ON loops(songid)",
     ]
 
@@ -81,8 +84,8 @@ class Stats(object):
         con = self.get_connection()
         with closing(con.cursor()) as cur:
             try:
-                cur.execute('insert into users(username, plays, playtime) values(?,?,?)',
-                            (name, 0, 0))
+                cur.execute('insert into users(username, plays, playtime, skips) values(?,?,?,?)',
+                            (name, 0, 0, 0))
                 userid = cur.lastrowid
             except Exception as e:
                 raise e
@@ -123,8 +126,8 @@ class Stats(object):
         con = self.get_connection()
         with closing(con.cursor()) as cur:
             try:
-                columns = ['songname', 'hash', 'subtune', 'plays', 'playtime']
-                values = [name, songhash, subtune, 0, 0]
+                columns = ['songname', 'hash', 'subtune', 'plays', 'playtime', 'skips']
+                values = [name, songhash, subtune, 0, 0, 0]
                 if length is not None and (loops is None or loops == 1):
                     columns.append('length')
                     values.append(length)
@@ -143,16 +146,16 @@ class Stats(object):
         return songid
 
     def get_song_by_column(self, column, value):
-        r = self.fetch_all('select id, songname, subtune, length, looplength, plays, playtime from songs where %s=?' % (column,), (value,))
+        r = self.fetch_all('select id, songname, subtune, length, looplength, plays, playtime, skips from songs where %s=?' % (column,), (value,))
         if len(r) == 0:
             return None
-        return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4], r[0][5], r[0][6])
+        return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4], r[0][5], r[0][6], r[0][7])
 
     def get_user_by_column(self, column, value):
-        r = self.fetch_all('select id, username, plays, playtime from users where %s=?' % (column,), (value,))
+        r = self.fetch_all('select id, username, plays, playtime, skips from users where %s=?' % (column,), (value,))
         if len(r) == 0:
             return None
-        return (r[0][0], r[0][1], r[0][2], r[0][3])
+        return (r[0][0], r[0][1], r[0][2], r[0][3], r[0][4])
 
     def get_song_by_hash_and_subtune(self, songhash, subtune=None):
         if subtune is None:
@@ -223,8 +226,10 @@ class Stats(object):
         starttime = round(starttime)
         duration = round(duration)
         length = None if aborted else duration
+        skipstr = ''
         if aborted:
             loops = None
+            skipstr = ', skips=skips+1 '
         userid = self.get_or_add_user(username)
         songid = self.get_or_add_song(songname, songhash, subtune, length, loops)
         usersongid = self.get_usersong(userid, songid)
@@ -233,16 +238,16 @@ class Stats(object):
             try:
                 cur.execute('insert into log (userid, songid, timestamp, duration) values(?,?,?,?)',
                             (userid, songid, starttime, duration))
-                cur.execute('update songs set plays=plays+1, playtime=playtime+? where id=?',
+                cur.execute('update songs set plays=plays+1, playtime=playtime+?%s where id=?' % (skipstr,),
                             (duration, songid))
-                cur.execute('update users set plays=plays+1, playtime=playtime+? where id=?',
+                cur.execute('update users set plays=plays+1, playtime=playtime+?%s where id=?' % (skipstr,),
                             (duration, userid))
                 if usersongid is None:
-                    cur.execute('insert into usersongs (userid, songid, plays, playtime) values(?,?,?,?)',
-                                (userid, songid, 1, duration))
+                    cur.execute('insert into usersongs (userid, songid, plays, playtime, skips) values(?,?,?,?)',
+                                (userid, songid, 1, duration, 1 if aborted else 0))
                 else:
-                    cur.execute('update usersongs set plays=plays+1, playtime=playtime+? where userid=? and songid=?',
-                            (duration, userid, songid))
+                    cur.execute('update usersongs set plays=plays+1, playtime=playtime+?%s where userid=? and songid=?' % (skipstr,),
+                                (duration, userid, songid))
             except Exception as e:
                 raise e
         con.commit()

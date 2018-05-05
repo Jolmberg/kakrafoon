@@ -73,6 +73,62 @@ def print_queue_simple(queue, truncate):
                 fmt = '{:04d}.{:02d}  {:{user}.{user}}  {:.{song}}'
             print(fmt.format(i.key, s.key, i.user, s.filename, user=longestalloweduser, song=longestallowedsong))
 
+def print_table(columns, truncate_order, data):
+    cols = 80
+    truncate = True
+    if sys.stdout.isatty():
+        cols = shutil.get_terminal_size((80,24)).columns
+
+    # Get max lengths for all columns
+    maxlength = dict((column[0], 0) for column in columns)
+    for row in data:
+        for column in columns:
+            c = column[0]
+            if c in row:
+                if c not in maxlength:
+                    maxlength[c] = len(str(row[c]))
+                else:
+                    maxlength[c] = max(maxlength[c], len(str(row[c])))
+
+    # Get min lengths for all columns
+    minlength = {}
+    for column in columns:
+        c = column[0]
+        m = column[1]
+        if c not in truncate_order:
+            minlength[c] = maxlength[c]
+        else:
+            minlength[c] = m
+
+    spaces = 2 * (len(minlength) - 1)
+    minwidth = sum(v for v in minlength.values()) + spaces
+    width = sum(v for v in maxlength.values()) + spaces
+    if minwidth <= cols:
+        # Truncate if needed
+        if width > cols:
+            for col in truncate_order:
+                gain = maxlength[col] - minlength[col]
+                if width - gain > cols:
+                    maxlength[col] = minlength[col]
+                    width = width - gain
+                else:
+                    maxlength[col] = maxlength[col] - (width - cols)
+                    break
+
+    for row in data:
+        line = []
+        for column in columns:
+            c = column[0]
+            s = ''
+            if c in row:
+                s = str(row[c])[:maxlength[c]]
+            if column[2] == 'l':
+                s = s.ljust(maxlength[c], ' ')
+            elif column[2] == 'r':
+                s = s.rjust(maxlength[c], ' ')
+            line.append(s)
+        print('  '.join(line))
+
 def print_queue_fancy(queue):
     if not queue.items:
         print("Oh noes, the queue is empty.")
@@ -210,6 +266,8 @@ if __name__ == '__main__':
                         help='resume playback')
     group1.add_argument('-f', '--shuffle', action='store_true',
                         help='shuffle songs')
+    group1.add_argument('-i', '--highscore', type=str, nargs='+', metavar='I', action='append',
+                        help='Show high scores, use --highscore help for more info'),
     group1.add_argument('-k', '--skip', action='store_true',
                         help='skip current queue entry')
     group1.add_argument('-K', '--skip-item', action='store_true',
@@ -310,6 +368,13 @@ if __name__ == '__main__':
                             volume_printed = True
                 else:
                     client.set_volume(v.volume, channel=v.channel, mixer=v.mixer, relative=v.relative)
+        elif args.highscore is not None:
+            print(args.highscore)
+            args = args.highscore[-1]
+            if args == ['help']:
+                print('Du torde vara ful och dum!')
+            elif args == ['songs_by_plays']:
+                print_table([('songname',1,'l'), ('plays',-1,'r')], ['songname'], client.stats_songs_by_plays())
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:

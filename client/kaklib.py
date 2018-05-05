@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import json
 import os
 import requests
 import kakmsg.enqueue
@@ -43,10 +44,10 @@ class Client(object):
 
         enqueuerequest = kakmsg.enqueue.EnqueueRequest(self.username, items)
         schema = kakmsg.enqueue.EnqueueRequestSchema()
-        json = schema.dumps(enqueuerequest)
+        j = schema.dumps(enqueuerequest)
 
         try:
-            r = requests.post(self.server_url + '/queue', data={'enqueue_request':json}, files=files)
+            r = requests.post(self.server_url + '/queue', data={'enqueue_request':j}, files=files)
             if r.status_code == 200:
                 return
             else:
@@ -145,10 +146,14 @@ class Client(object):
 
             setrequest = kakmsg.volume.SetRequest(volume, channel, mixer)
             schema = kakmsg.volume.SetRequestSchema()
-            json = schema.dumps(setrequest)
-            r = requests.post(self.server_url + '/volume', data={'volume_set_request':json})
+            j = schema.dumps(setrequest)
+            r = requests.post(self.server_url + '/volume', data={'volume_set_request':j})
             if r.status_code != 200:
                 raise_response_error(r)
 
         except requests.exceptions.ConnectionError:
             raise ConnectionError()
+
+    def stats_songs_by_plays(self, limit=10):
+        r = requests.get(self.server_url + '/stats/songs_by_plays')
+        return json.loads(r.text)
