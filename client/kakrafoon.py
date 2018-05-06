@@ -409,9 +409,3 @@ if __name__ == '__main__':
         print(e.message)
     except kaklib.ConnectionError as e:
         print("Connection failed, server %s, user %s"%(client.server_url, client.username))
-
-# stats_columns = { 'songs_by_plays' : ([('songname',1,'l'), ('plays',-1,'r')], ['songname']),
-#                   'songs_by_playtime' : ([('songname',1,'l'), ('playtime',-1,'r')], ['songname']),
-#                   'songs_by_players' : ([('songname',1,'l'), ('players',-1,'r')], ['songname']),
-#                   'users_by_plays' : ([('username',1,'l'), ('plays',-1,'r')], ['username']),
-#                   'users_by_playtime' : ([('username',1,'l'), ('playtime',-1,'r')], ['username']                  'users_by_songs' : ([('username',1,'l'), ('songs',-1,'r')], ['username']),

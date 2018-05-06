@@ -166,7 +166,6 @@ class Client(object):
                 r = requests.get(self.server_url + '/stats/users?username=' + user)
                 schema = kakmsg.stats.UserSchema()
                 u = schema.loads(r.text).data
-                print(r.text)
                 userid = str(u.id)
             url = '/stats/users/%s/' % (userid)
         elif song is not None:
