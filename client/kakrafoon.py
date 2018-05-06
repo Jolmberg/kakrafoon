@@ -13,7 +13,7 @@ import kaklib
 import kakmsg.enqueue
 
 
-def format_song_time(seconds):
+def format_time(seconds):
     hours = seconds // 3600
     seconds -= hours * 3600
     minutes = seconds // 60
@@ -138,7 +138,7 @@ def print_queue_fancy(queue):
             line = s.filename
             if s.key == queue.current_song:
                 if queue.current_song_time is not None:
-                    current_song_time = format_song_time(queue.current_song_time)
+                    current_song_time = format_time(queue.current_song_time)
                     line += ' (%s)' % (current_song_time,)
                 if not queue.playing:
                     line += ' (paused)'
@@ -397,6 +397,10 @@ if __name__ == '__main__':
 
                 data = client.stats(metric, **kwargs)
                 variable_column = metric.split('_')[-1]
+                if variable_column == 'playtime':
+                    for row in data:
+                        if 'playtime' in row:
+                            row['playtime'] = format_time(row['playtime'])
                 songoruser = metric.split('_')[0][:-1] + 'name'
                 print_table([(songoruser,1,'l'), (variable_column,-1,'r')], [songoruser], data)
         else:
