@@ -161,10 +161,8 @@ class Stats(object):
         if subtune is None:
             subtune = -1
         if (songhash, subtune) in self._song_cache:
-            print("Song is cached: " + str(self._song_cache[(songhash, subtune)]))
             return self._song_cache[(songhash, subtune)]
         # TODO: Should the song cache size be limited somehow?
-        print("Song is not cached: " + str((songhash, subtune)))
         con = self.get_connection()
         r = self.fetch_all('select id, songname, length, looplength from songs where hash=? and subtune=?',
                             (songhash, subtune))
@@ -256,7 +254,6 @@ class Stats(object):
         return self.fetch_all('select id as {0}id, {0}name, {1} from {0}s order by {1} {2} limit ? offset ?'.format(thing, value, 'asc' if ascending else 'desc'), (limit, offset))
 
     def metric_usersongs_thing_by_value(self, thing, value, id, limit=10, offset=0, ascending=False):
-        print('bulk')
         idthing = 'song' if thing == 'user' else 'user'
         return self.fetch_all('select i.id as {0}id, i.{0}name, us.{2} from usersongs us inner join {0}s i on us.{0}id = i.id where us.{1}id=? order by us.{2} {3} limit ? offset ?'.format(thing, idthing, value, 'asc' if ascending else 'desc'), (id, limit, offset))
 
