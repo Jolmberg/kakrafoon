@@ -269,9 +269,9 @@ if __name__ == '__main__':
     group1.add_argument('-i', '--highscore', type=str, nargs='+', metavar='I', action='append',
                         help='Show high scores, use --highscore help for more info'),
     group1.add_argument('-k', '--skip', action='store_true',
-                        help='skip current queue entry')
+                        help='skip current song')
     group1.add_argument('-K', '--skip-item', action='store_true',
-                        help='skip current item')
+                        help='skip current queue item')
     parser.add_argument('-l', '--loops', type=int, nargs='*', metavar='N',
                         help='the number of times to loop the song')
     group1.add_argument('-v', '--volume', nargs='?', metavar='V', action='append',
