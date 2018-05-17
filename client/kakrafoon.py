@@ -46,32 +46,7 @@ def print_queue(queue, style=None):
 def print_queue_simple(queue, truncate):
     if not queue.items:
         return
-
-    cols = 80
-    if truncate:
-        if sys.stdout.isatty():
-            cols = shutil.get_terminal_size((80,24)).columns
-
-    longestuser = max(len(i.user) for i in queue.items)
-    longestsong = max(max(len(s.filename) for s in i.songs) for i in queue.items)
-    longestid = max(max((max(4, (len(str(i.key)))) + max(2,len(str(s.key)))) for s in i.songs) for i in queue.items) + 1
-    if longestid + 6 > cols:
-        truncate = False
-
-    for i in queue.items:
-        for s in i.songs:
-            fmt = None
-            longestalloweduser = 0
-            if not truncate:
-                longestalloweduser = longestuser
-                longestallowedsong = longestsong
-                fmt = '{:04d}.{:02d}  {:{user}}  {}'
-            else:
-                # Allow at least one letter for the song name
-                longestalloweduser = min(longestuser, cols - longestid - 5)
-                longestallowedsong = min(longestsong, cols - longestid - longestalloweduser - 4)
-                fmt = '{:04d}.{:02d}  {:{user}.{user}}  {:.{song}}'
-            print(fmt.format(i.key, s.key, i.user, s.filename, user=longestalloweduser, song=longestallowedsong))
+    print_table([('key',-1,'r'), ('user',1,'l'), ('filename',1,'l')], ['filename', 'user'] if truncate else [], flatten_queue_items(queue.items))
 
 def print_table(columns, truncate_order, data):
     cols = 80
@@ -135,23 +110,40 @@ def print_queue_fancy(queue):
     else:
         print('%s is playing:' % (queue.items[0].user))
         for s in queue.items[0].songs:
-            line = s.filename
             if s.key == queue.current_song:
-                if queue.current_song_time is not None:
-                    current_song_time = format_time(queue.current_song_time)
-                    line += ' (%s)' % (current_song_time,)
+                line = s.filename
+                if s.length is not None or queue.current_song_time is not None:
+                    song_length = (format_time(s.length) if s.length is not None else '??:??')
+                    current_song_time = format_time(queue.current_song_time) if queue.current_song_time is not None else '??:??'
+                    line += '  %s/%s' % (current_song_time, song_length)
                 if not queue.playing:
                     line += ' (paused)'
-            print(line)
+                print(line)
+
+        left = [x for x in queue.items[0].songs if x.key != queue.current_song]
+        flat = flatten_songs(left, queue.items[0])
+        print_table([('filename',1,'l'), ('length',-1,'r')], ['filename'], flat)
 
         if len(queue.items) > 1:
             if len(queue.items[0].songs) > 1:
                 print('\nUp soon:')
             else:
                 print('\nUp next:')
-            for i in queue.items[1:]:
-                for s in i.songs:
-                    print("%04d.%02d  %-10s  %-55s" % (i.key, s.key, i.user, s.filename))
+            print_table([('key',-1,'r'), ('user',1,'l'), ('filename',1,'l'), ('length',-1,'r')], ['filename', 'user'], flatten_queue_items(queue.items[1:]))
+
+def flatten_songs(songs, item):
+    f = []
+    for s in songs:
+        length = format_time(s.length) if s.length is not None else ''
+        f.append({'key': "%04d.%02d" % (item.key, s.key), 'user': item.user, 'filename': s.filename, 'length': length})
+    return f
+
+
+def flatten_queue_items(items):
+    f = []
+    for i in items:
+        f += flatten_songs(i.songs, i)
+    return f
 
 def print_volume(volume):
     for mixer in volume.mixers:

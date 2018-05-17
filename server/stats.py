@@ -104,6 +104,15 @@ class Stats(object):
             cur.execute(query, params)
             return cur.fetchall()
 
+    def execute(self, query, params=(), cur=None):
+        if not cur:
+            con = self.get_connection()
+            con.row_factory = sqlite3.Row
+            with closing(con.cursor()) as cur:
+                return cur.execute(query, params)
+        else:
+            return cur.execute(query, params)
+
     def get_user_by_name(self, name):
         if name in self._user_cache:
             return self._user_cache[name]
@@ -173,12 +182,22 @@ class Stats(object):
         return result
 
     def get_or_add_song(self, name, songhash, subtune=None, length=None, loops=None):
+        if subtune is None:
+            subtune = -1
         song = self.get_song_by_hash_and_subtune(songhash, subtune)
         if song is not None:
             if song[3] is None and loops is not None:
                 self._calculate_loops(song[0], loops, length)
+            elif song[2] is None and length is not None:
+                song = song[:2] + (length,) + song[3:]
+                self._update_song(song, (songhash, subtune))
             return song[0]
         return self.add_song(name, songhash, subtune, length, loops)
+
+    def _update_song(self, song, cache_key):
+        self.execute('update songs set songname=?, length=?, looplength=? where id=?',
+                     (song[1], song[2], song[3], song[0]))
+        self._song_cache[cache_key] = song
 
     def _calculate_loops(self, songid, loops, length):
         con = self.get_connection()
