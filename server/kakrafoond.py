@@ -16,8 +16,8 @@ from flask import Flask, request
 app = Flask(__name__)
 
 kqueue = kakqueue.Queue()
-kpool = songpool.SongPool()
 kstats = stats.Stats()
+kpool = songpool.SongPool(kstats)
 control = control.Control(kpool, kqueue, kstats)
 
 control.start()

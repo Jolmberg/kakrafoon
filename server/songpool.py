@@ -26,7 +26,8 @@ def _save_and_hash_songs(item):
 
 class SongPool(object):
     """The SongPool stores and keeps track of items that have been uploaded"""
-    def __init__(self):
+    def __init__(self, kstats):
+        self.kstats = kstats
         self.items = {}
         self.id_counter = 1
 
@@ -37,6 +38,7 @@ class SongPool(object):
         item_id = self.id_counter
         item.key = item_id
         _save_and_hash_songs(item)
+        self._add_song_lengths(item)
         self.id_counter += 1
         self.items[item_id] = item
         return item_id
@@ -73,3 +75,15 @@ class SongPool(object):
         item.songs.remove(song)
         os.remove(os.path.join(config['song_pool_path'], str(item_id), str(song_id)))
         return True
+
+    def _add_song_lengths(self, item):
+        for song in item.songs:
+            dbsong = self.kstats.get_song_by_hash_and_subtune(song.hash, song.subtune)
+            if dbsong is None:
+                continue
+            song.length = None
+            if dbsong[2] is not None:
+                if dbsong[3] is not None and song.loops is not None:
+                    song.length = dbsong[2] + dbsong[3] * (song.loops + 1)
+                elif dbsong[3]:
+                    song.length = dbsong[2] + dbsong[3]
