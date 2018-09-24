@@ -272,9 +272,30 @@ class Stats(object):
     def metric_thing_by_value(self, thing, value, limit=10, offset=0, ascending=False):
         return self.fetch_all('select id as {0}id, {0}name, {1} from {0}s order by {1} {2} limit ? offset ?'.format(thing, value, 'asc' if ascending else 'desc'), (limit, offset))
 
-    def metric_usersongs_thing_by_value(self, thing, value, id, limit=10, offset=0, ascending=False):
-        idthing = 'song' if thing == 'user' else 'user'
+    def metric_usersongs_thing_by_value(self, thing, value, userid=None, songid=None, limit=10, offset=0, ascending=False):
+        if userid is None and songid is None:
+            return self.metric_thing_by_value(thing, value, limit=limit, offset=offset, ascending=ascending)
+        idthing, id = None, None
+        if thing == 'user':
+            idthing = 'song'
+            id = songid
+        else:
+            idthing = 'user'
+            id = userid
         return self.fetch_all('select i.id as {0}id, i.{0}name, us.{2} from usersongs us inner join {0}s i on us.{0}id = i.id where us.{1}id=? order by us.{2} {3} limit ? offset ?'.format(thing, idthing, value, 'asc' if ascending else 'desc'), (id, limit, offset))
 
     def metric_usersongs_thing_by_unique_value(self, thing, number, limit=10, offset=0, ascending=False):
         return self.fetch_all('select i.id as {0}id, i.{0}name, count(*) as {1} from usersongs us inner join {0}s i on us.{0}id = i.id group by 1,2 order by 3 {2} limit ? offset ?'.format(thing, number, 'asc' if ascending else 'desc'), (limit, offset))
+
+    def metric_recent(self, userid=None, songid=None, limit=10, offset=0, ascending=False):
+        conditions = []
+        if type(userid) is str and userid.isnumeric():
+            conditions.append('l.userid = ' + userid)
+        if type(songid) is str and songid.isnumeric():
+            conditions.append('l.songid = ' + songid)
+        where = ''
+        if conditions:
+            where = 'where ' + ' and '.join(conditions)
+        # Order by log.id rather than log.timestamp to avoid the need for an
+        # index on the latter. This may or may not be a wonderful idea.
+        return self.fetch_all('select l.id, l.timestamp, u.username, s.songname from log l inner join users u on l.userid = u.id inner join songs s on l.songid = s.id ' + where + ' order by l.id {0} limit ? offset ?'.format('asc' if ascending else 'desc'), (limit, offset))

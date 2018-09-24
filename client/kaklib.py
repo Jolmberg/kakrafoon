@@ -162,6 +162,7 @@ class Client(object):
 
     def stats(self, metric, user=None, song=None, limit=None, reverse=False):
         url = None
+        vars = []
         if user is not None:
             userid = str(user)
             if not userid.isnumeric():
@@ -169,13 +170,10 @@ class Client(object):
                 schema = kakmsg.stats.UserSchema()
                 u = schema.loads(r.text).data
                 userid = str(u.id)
-            url = '/stats/users/%s/' % (userid)
-        elif song is not None:
-            url = '/stats/songs/%s/' % (song)
-        else:
-            url = '/stats/'
-        url += metric
-        vars = []
+            vars.append('userid=%s'%(userid))
+        if song is not None:
+            vars.append('songid=%s'%(song))
+        url = '/stats/' + metric
         if type(limit) is int and limit > 0:
             vars.append('limit=%d' % (limit,))
         if reverse:

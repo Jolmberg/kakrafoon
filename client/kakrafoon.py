@@ -8,6 +8,7 @@ import random
 import os
 import shutil
 import sys
+import time
 
 import kaklib
 import kakmsg.enqueue
@@ -371,7 +372,7 @@ if __name__ == '__main__':
             if args == ['help']:
                 print("""Format: METRIC [user U] [song S] [limit N] [reverse]
  METRIC is one of songs_by_plays, songs_by_playtime, songs_by_users,
- users_by_plays, users_by_playtime, users_by_songs.
+ users_by_plays, users_by_playtime, users_by_songs, recent.
  Results can optionally be filtered to a single user or song.
  User can be given as user id or username. Song must always be song id.
  Examples:
@@ -394,13 +395,21 @@ if __name__ == '__main__':
                     kwargs['limit'] = int(kwargs['limit'])
 
                 data = client.stats(metric, **kwargs)
-                variable_column = metric.split('_')[-1]
-                if variable_column == 'playtime':
+
+                if metric == 'recent':
                     for row in data:
-                        if 'playtime' in row:
-                            row['playtime'] = format_time(row['playtime'])
-                songoruser = metric.split('_')[0][:-1] + 'name'
-                print_table([(songoruser,1,'l'), (variable_column,-1,'r')], [songoruser], data)
+                        if 'timestamp' in row:
+                            row['timestamp'] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(row['timestamp'])))
+                    print_table([('timestamp',1,'l'), ('username',1,'l'), ('songname',1,'l')], ['username', 'songname', 'timestamp'], data)
+
+                elif '_by_' in metric:
+                    variable_column = metric.split('_')[-1]
+                    if variable_column == 'playtime':
+                        for row in data:
+                            if 'playtime' in row:
+                                row['playtime'] = format_time(row['playtime'])
+                    songoruser = metric.split('_')[0][:-1] + 'name'
+                    print_table([(songoruser,1,'l'), (variable_column,-1,'r')], [songoruser], data)
         else:
             parser.print_help()
     except kaklib.ErrorResponse as e:

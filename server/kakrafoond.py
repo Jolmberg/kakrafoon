@@ -226,61 +226,50 @@ def stats_users():
         return j.data
     return make_error(400, 3003, 'Bad request')
 
-def get_limit_and_reverse():
-    r = {}
+def get_metric_parameters(allowed_params):
+    kwargs = {}
     if 'limit' in request.args:
         limit = request.args['limit']
         if limit.isnumeric() and int(limit) > 0:
-            r['limit'] = limit
+            kwargs['limit'] = limit
     if request.args.get('reverse', 'false') == 'true':
-        r['ascending'] = True
-    return r
+        kwargs['ascending'] = True
+    for p in allowed_params:
+        kwargs[p] = request.args.get(p, None)
+    return kwargs
 
-def metric(method, args):
-    kwargs = get_limit_and_reverse()
-    print(kwargs)
+def metric(method, args, allowed_params):
+    kwargs = get_metric_parameters(allowed_params)
     stuff = method(*args, **kwargs)
     return json.dumps([dict(x) for x in stuff])
 
-@app.route('/stats/songs/<songid>/users_by_plays', methods=['GET'])
-def stats_song_users_by_plays(songid):
-    return metric(kstats.metric_usersongs_thing_by_value, ('user', 'plays', int(songid)))
-
-@app.route('/stats/songs/<songid>/users_by_playtime', methods=['GET'])
-def stats_song_users_by_playtime(songid):
-    return metric(kstats.metric_usersongs_thing_by_value, ('user', 'playtime', int(songid)))
-
-@app.route('/stats/users/<userid>/songs_by_plays', methods=['GET'])
-def stats_user_songs_by_plays(userid):
-    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'plays', int(userid)))
-
-@app.route('/stats/users/<userid>/songs_by_playtime', methods=['GET'])
-def stats_user_songs_by_playtime(userid):
-    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'playtime', int(userid)))
-
 @app.route('/stats/songs_by_plays', methods=['GET'])
 def stats_songs_by_plays():
-    return metric(kstats.metric_thing_by_value,('song', 'plays'))
+    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'plays'), ['userid'])
 
 @app.route('/stats/songs_by_playtime', methods=['GET'])
 def stats_songs_by_playtime():
-    return metric(kstats.metric_thing_by_value,('song', 'playtime'))
+    return metric(kstats.metric_usersongs_thing_by_value, ('song', 'playtime'), ['userid'])
 
 @app.route('/stats/songs_by_users', methods=['GET'])
 def stats_songs_by_players():
-    return metric(kstats.metric_usersongs_thing_by_unique_value,('song', 'users'))
+    return metric(kstats.metric_usersongs_thing_by_unique_value, ('song', 'users'), [])
 
 @app.route('/stats/users_by_plays', methods=['GET'])
 def stats_users_by_plays():
-    return metric(kstats.metric_thing_by_value,('user', 'plays'))
+    return metric(kstats.metric_usersongs_thing_by_value, ('user', 'plays'), ['songid'])
 
 @app.route('/stats/users_by_playtime', methods=['GET'])
 def stats_users_by_playtime():
-    return metric(kstats.metric_thing_by_value,('user', 'playtime'))
+    return metric(kstats.metric_usersongs_thing_by_value,('user', 'playtime'), ['songid'])
 
 @app.route('/stats/users_by_songs', methods=['GET'])
 def stats_users_by_songs():
-    return metric(kstats.metric_usersongs_thing_by_unique_value,('user', 'songs'))
+    return metric(kstats.metric_usersongs_thing_by_unique_value,('user', 'songs'), [])
+
+@app.route('/stats/recent', methods=['GET'])
+def stats_recent():
+    return metric(kstats.metric_recent, (), ['userid', 'songid'])
 
 if __name__ == '__main__':
     app.debug=True
