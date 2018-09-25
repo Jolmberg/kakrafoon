@@ -1,6 +1,8 @@
 import hashlib
 import shutil
 import os
+import threading
+
 from config import dictionary as config
 
 os.makedirs(config['song_pool_path'], exist_ok=True)
@@ -29,17 +31,24 @@ class SongPool(object):
     def __init__(self, kstats):
         self.kstats = kstats
         self.items = {}
-        self.id_counter = 1
+        self._id_counter = 0
+        self._lock = threading.Lock()
+
+    def _get_new_id(self):
+        self._lock.acquire()
+        self._id_counter += 1
+        r = self._id_counter
+        self._lock.release()
+        return r
 
     def add_item(self, item):
         """Adds an item to the pool, saves its files to the file system and
         assigns an id to it.
         """
-        item_id = self.id_counter
+        item_id = self._get_new_id()
         item.key = item_id
         _save_and_hash_songs(item)
         self._add_song_lengths(item)
-        self.id_counter += 1
         self.items[item_id] = item
         return item_id
         
